@@ -1,9 +1,36 @@
 import { NextResponse } from 'next/server'
 import { readDB, writeDB } from '@/lib/db-server'
 
+function queryTopicData() {
+  return readDB()
+}
+
+function saveTopicToDB(db: any, title: string, instructor: string, field: string, capacity: number, objective: string, requirement: string, creator?: string) {
+  db.topics.unshift({
+    id: `t-${Date.now()}`,
+    title,
+    instructor,
+    field,
+    capacity,
+    registered: 0,
+    approval: 'pending',
+    objective,
+    requirement,
+    creator: creator || ""
+  })
+  writeDB(db)
+}
+
+function saveProcessResultToDB(db: any, id: string, approval: string) {
+  db.topics = db.topics.map((t: any) => 
+    t.id === id ? { ...t, approval } : t
+  )
+  writeDB(db)
+}
+
 export async function GET() {
   try {
-    const db = readDB()
+    const db = queryTopicData()
     return NextResponse.json({
       success: true,
       topics: db.topics,
@@ -22,7 +49,7 @@ export async function POST(request: Request) {
     const db = readDB()
 
     if (action === 'save_topic') {
-      const { id, title, instructor, field, capacity, objective, requirement } = body
+      const { id, title, instructor, field, capacity, objective, requirement, creator } = body
       if (id) {
         // Edit
         db.topics = db.topics.map(t => 
@@ -36,21 +63,11 @@ export async function POST(request: Request) {
             requirement
           } : t
         )
+        writeDB(db)
       } else {
         // Create (proposed by lecturer/student)
-        db.topics.unshift({
-          id: `t-${Date.now()}`,
-          title,
-          instructor,
-          field,
-          capacity: Number(capacity),
-          registered: 0,
-          approval: 'pending',
-          objective,
-          requirement
-        } as any)
+        saveTopicToDB(db, title, instructor, field, Number(capacity), objective, requirement, creator)
       }
-      writeDB(db)
       return NextResponse.json({ success: true, topics: db.topics })
     }
 
@@ -63,15 +80,18 @@ export async function POST(request: Request) {
 
     if (action === 'set_approval') {
       const { id, approval } = body
-      db.topics = db.topics.map(t => 
-        t.id === id ? { ...t, approval } : t
-      )
-      writeDB(db)
+      saveProcessResultToDB(db, id, approval)
       return NextResponse.json({ success: true, topics: db.topics })
     }
 
     if (action === 'register_topic') {
       const { id, studentName } = body
+      // Check if student already has a registration (pending or approved)
+      const existingReg = db.registrations.find(r => r.student === studentName)
+      if (existingReg) {
+        // Do not allow multiple registrations
+        return NextResponse.json({ success: false, message: 'Sinh viên đã đăng ký đề tài rồi' }, { status: 400 })
+      }
       const topic = db.topics.find(t => t.id === id)
       if (topic) {
         topic.registered = (topic.registered || 0) + 1

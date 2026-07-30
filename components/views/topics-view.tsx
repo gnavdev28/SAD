@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { Search, User, Users2, Pencil, Trash2, Plus, Check, X, CheckCircle2 } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, User, Users2, Pencil, Trash2, Plus, Check, X, CheckCircle2, CalendarRange, ArrowUpDown, BookCheck, Clock } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -25,15 +26,34 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { topics as initialTopics, registrations as initialRegs, type Topic, type Registration } from "@/lib/mock-data"
 
 type Role = "student" | "instructor" | "admin"
 type TopicRow = Topic & { approval: "approved" | "pending" | "rejected"; registered: number; mine?: boolean }
 
-export function TopicsView() {
-  const [role, setRole] = useState<Role>("student")
+export interface TopicsViewProps {
+  user?: { name: string; email: string; role: string }
+}
+
+export function TopicsView({ user }: TopicsViewProps) {
+  const initialRole: Role = user
+    ? user.role === "Giáo vụ"
+      ? "admin"
+      : user.role === "Giảng viên"
+      ? "instructor"
+      : "student"
+    : "student"
+
+  const [role, setRole] = useState<Role>(initialRole)
+
+  useEffect(() => {
+    setRole(initialRole)
+  }, [user])
+
   const [query, setQuery] = useState("")
+  // Topic sorting state
+  const [topicSortBy, setTopicSortBy] = useState<"approval" | "title" | "instructor" | "registered">("approval")
+  const [selectedSemesterFilter, setSelectedSemesterFilter] = useState<string>("dt-2026-t8")
   const [items, setItems] = useState<TopicRow[]>([])
   const [regs, setRegs] = useState<Registration[]>([])
 
@@ -50,29 +70,75 @@ export function TopicsView() {
   const [cancelRegOpen, setCancelRegOpen] = useState(false)
   const [topicToCancel, setTopicToCancel] = useState<TopicRow | null>(null)
 
+  const [activeTab, setActiveTab] = useState<string>("topics")
+
   useEffect(() => {
-    fetchData()
+    sendSearchRequest()
   }, [])
 
-  async function fetchData() {
+  async function sendSearchRequest() {
+    await requestSearchTopic()
+  }
+
+  async function requestSearchTopic() {
     try {
       const res = await fetch("/api/topics")
       const data = await res.json()
       if (data.success) {
         setItems(data.topics)
         setRegs(data.registrations)
+
+        const sReg = data.registrations.find((r: any) => {
+          const sName = r.student.trim()
+          const uName = (user?.name || "").trim()
+          return sName === uName || sName.includes(uName) || uName.includes(sName)
+        })
+        if (sReg) {
+          setActiveTab("my-topic")
+        }
       }
     } catch (err) {
       console.error("Error fetching topics:", err)
     }
   }
 
-  const filtered = items.filter(
-    (t) =>
-      t.title.toLowerCase().includes(query.toLowerCase()) ||
-      t.instructor.toLowerCase().includes(query.toLowerCase()) ||
-      t.field.toLowerCase().includes(query.toLowerCase()),
-  )
+  // Kiểm tra đề tài sinh viên đang đăng ký
+  const studentReg = regs.find((r) => {
+    const sName = r.student.trim()
+    const uName = (user?.name || "").trim()
+    return sName === uName || sName.includes(uName) || uName.includes(sName)
+  })
+  const hasRegistered = Boolean(studentReg)
+  const myTopic = studentReg ? items.find((t) => t.title === studentReg.topicTitle) : null
+
+  const filtered = items
+    .filter((t) => {
+      const matchesSearch =
+        t.title.toLowerCase().includes(query.toLowerCase()) ||
+        t.instructor.toLowerCase().includes(query.toLowerCase()) ||
+        t.field.toLowerCase().includes(query.toLowerCase())
+      if (selectedSemesterFilter !== "all") {
+        const matchesSemester = !t.semesterId || t.semesterId === selectedSemesterFilter
+        return matchesSearch && matchesSemester
+      }
+      return matchesSearch
+    })
+    .map((t) => {
+      const isMine = regs.some(
+        (r) => r.student === user?.name && r.topicTitle === t.title
+      )
+      return { ...t, mine: isMine }
+    })
+    .sort((a, b) => {
+      if (topicSortBy === "approval") {
+        const order: Record<string, number> = { pending: 0, approved: 1, rejected: 2 }
+        return (order[a.approval] ?? 0) - (order[b.approval] ?? 0)
+      }
+      if (topicSortBy === "title") return a.title.localeCompare(b.title, "vi")
+      if (topicSortBy === "instructor") return a.instructor.localeCompare(b.instructor, "vi")
+      if (topicSortBy === "registered") return b.registered - a.registered
+      return 0
+    })
 
   function openCreate() {
     setEditingId(null)
@@ -95,12 +161,11 @@ export function TopicsView() {
     setOpen(true)
   }
 
-  async function handleSave() {
-    if (!form.title.trim() || !form.instructor.trim() || !form.field.trim() || !form.capacity || !form.objective.trim() || !form.requirement.trim()) {
-      setError("Vui lòng nhập đầy đủ thông tin đề tài bao gồm cả mục tiêu và yêu cầu.")
-      return
-    }
+  async function sendProposalRequest() {
+    await sendTopicObject()
+  }
 
+  async function sendTopicObject() {
     try {
       const res = await fetch("/api/topics", {
         method: "POST",
@@ -113,7 +178,8 @@ export function TopicsView() {
           field: form.field.trim(),
           capacity: Number(form.capacity),
           objective: form.objective.trim(),
-          requirement: form.requirement.trim()
+          requirement: form.requirement.trim(),
+          creator: user?.name || "Nguyễn Văn Đạt"
         })
       })
       const data = await res.json()
@@ -123,6 +189,15 @@ export function TopicsView() {
     } catch (err) {
       console.error("Error saving topic:", err)
     }
+  }
+
+  async function handleSave() {
+    if (!form.title.trim() || !form.instructor.trim() || !form.field.trim() || !form.capacity || !form.objective.trim() || !form.requirement.trim()) {
+      setError("Vui lòng nhập đầy đủ thông tin đề tài bao gồm cả mục tiêu và yêu cầu.")
+      return
+    }
+
+    await sendProposalRequest()
 
     setOpen(false)
   }
@@ -159,7 +234,7 @@ export function TopicsView() {
     setTopicToDelete(null)
   }
 
-  async function setApproval(id: string, approval: TopicRow["approval"]) {
+  async function sendProcessRequest(id: string, approval: TopicRow["approval"]) {
     try {
       const res = await fetch("/api/topics", {
         method: "POST",
@@ -179,7 +254,11 @@ export function TopicsView() {
     }
   }
 
-  async function register(id: string) {
+  async function sendRegistrationRequest(id: string) {
+    await sendSaveRegistration(id)
+  }
+
+  async function sendSaveRegistration(id: string) {
     try {
       const res = await fetch("/api/topics", {
         method: "POST",
@@ -187,7 +266,7 @@ export function TopicsView() {
         body: JSON.stringify({
           action: "register_topic",
           id,
-          studentName: "Nguyễn Văn Đạt"
+          studentName: user?.name || "Nguyễn Văn Đạt"
         })
       })
       const data = await res.json()
@@ -208,7 +287,7 @@ export function TopicsView() {
         body: JSON.stringify({
           action: "cancel_registration",
           id,
-          studentName: "Nguyễn Văn Đạt"
+          studentName: user?.name || "Nguyễn Văn Đạt"
         })
       })
       const data = await res.json()
@@ -234,7 +313,7 @@ export function TopicsView() {
     setTopicToCancel(null)
   }
 
-  async function setRegStatus(id: string, status: Registration["status"]) {
+  async function sendApprovalRequest(id: string, status: "approved" | "rejected") {
     const reg = regs.find(r => r.id === id)
     if (!reg) return
     try {
@@ -252,13 +331,10 @@ export function TopicsView() {
         setRegs(data.registrations)
         if (data.topics) {
           setItems(data.topics)
-        } else {
-          // reload if needed
-          fetchData()
         }
       }
     } catch (err) {
-      console.error("Error setting reg status:", err)
+      console.error("Error setting registration status:", err)
     }
   }
 
@@ -277,48 +353,170 @@ export function TopicsView() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <Badge variant="outline" className="gap-1.5 py-1 px-3 bg-primary/5 text-primary border-primary/20 font-medium text-xs">
+              <CalendarRange className="size-3.5" />
+              Đợt đăng ký: <span className="font-semibold">Đợt ĐATN Tháng 8 - 9/2026</span> (Đang mở)
+            </Badge>
+          </div>
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">Quản lý đề tài</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Đăng ký, đề xuất và phê duyệt đề tài đồ án tốt nghiệp theo vai trò.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="role" className="text-xs text-muted-foreground">
-            Vai trò:
-          </Label>
-          <Select value={role} onValueChange={(v) => setRole(v as Role)}>
-            <SelectTrigger id="role" className="w-40 bg-card">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="student">Sinh viên</SelectItem>
-              <SelectItem value="instructor">Giảng viên</SelectItem>
-              <SelectItem value="admin">Giáo vụ</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {user?.role === "Giáo vụ" && (
+          <div className="flex items-center gap-2">
+            <Label htmlFor="role" className="text-xs text-muted-foreground">
+              Vai trò:
+            </Label>
+            <Select value={role} onValueChange={(v) => setRole(v as Role)}>
+              <SelectTrigger id="role" className="w-40 bg-card">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="student">Sinh viên</SelectItem>
+                <SelectItem value="instructor">Giảng viên</SelectItem>
+                <SelectItem value="admin">Giáo vụ</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
-      <Tabs defaultValue="topics" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
-          <TabsTrigger value="topics">Danh sách đề tài</TabsTrigger>
+          {studentReg && <TabsTrigger value="my-topic">Đề tài của tôi</TabsTrigger>}
+          <TabsTrigger value="topics">Danh sách tất cả đề tài</TabsTrigger>
           {role === "instructor" ? <TabsTrigger value="approvals">Duyệt SV đăng ký</TabsTrigger> : null}
         </TabsList>
 
+        {studentReg && (
+          <TabsContent value="my-topic" className="mt-4 flex flex-col gap-4">
+            <Card className="border-emerald-600/30 bg-emerald-500/5 overflow-hidden">
+              <CardHeader className="border-b border-emerald-600/20 bg-emerald-500/10 py-4">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3">
+                    <BookCheck className="size-7 text-emerald-600 shrink-0" />
+                    <div>
+                      <h3 className="text-base font-semibold text-foreground">Đề tài đồ án đã đăng ký của bạn</h3>
+                      <p className="text-xs text-muted-foreground">Thông tin chi tiết đề tài và trạng thái phê duyệt từ Người phụ trách đồ án / GVHD</p>
+                    </div>
+                  </div>
+                  {studentReg.status === "approved" ? (
+                    <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-1.5 px-3 gap-1.5 self-start sm:self-auto">
+                      <CheckCircle2 className="size-4" /> ĐÃ DUYỆT CHÍNH THỨC
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-amber-600 border-amber-600/30 bg-amber-500/10 font-semibold py-1.5 px-3 gap-1.5 self-start sm:self-auto">
+                      <Clock className="size-4" /> ĐANG CHỜ PHÊ DUYỆT
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-5 pt-6">
+                {myTopic ? (
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tên đề tài đồ án</span>
+                      <h2 className="text-xl font-bold text-foreground">{myTopic.title}</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-lg bg-card border border-border">
+                      <div>
+                        <span className="text-xs text-muted-foreground">Giảng viên hướng dẫn:</span>
+                        <p className="font-semibold text-sm text-foreground mt-0.5">{myTopic.instructor}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Lĩnh vực chuyên môn:</span>
+                        <p className="font-semibold text-sm text-foreground mt-0.5">{myTopic.field}</p>
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Số lượng sinh viên:</span>
+                        <p className="font-semibold text-sm text-foreground mt-0.5">{myTopic.registered} / {myTopic.capacity} sinh viên</p>
+                      </div>
+                    </div>
+
+                    {myTopic.objective && (
+                      <div className="flex flex-col gap-1 text-sm">
+                        <span className="font-semibold text-foreground text-xs uppercase text-muted-foreground">Mục tiêu đề tài:</span>
+                        <p className="text-muted-foreground bg-card p-3 rounded-md border border-border leading-relaxed">{myTopic.objective}</p>
+                      </div>
+                    )}
+
+                    {myTopic.requirement && (
+                      <div className="flex flex-col gap-1 text-sm">
+                        <span className="font-semibold text-foreground text-xs uppercase text-muted-foreground">Yêu cầu kiến thức / Kỹ năng:</span>
+                        <p className="text-muted-foreground bg-card p-3 rounded-md border border-border leading-relaxed">{myTopic.requirement}</p>
+                      </div>
+                    )}
+
+                    {studentReg.status === "approved" ? (
+                      <div className="mt-2 p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-lg text-xs text-emerald-700 dark:text-emerald-400 font-medium flex items-center gap-2.5">
+                        <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                        <span>Đề tài của bạn đã được phê duyệt chính thức. Bạn không thể hủy đăng ký sau khi đã duyệt. Hãy sang mục <strong>Tiến độ &amp; Báo cáo</strong> để thực hiện nộp bài.</span>
+                      </div>
+                    ) : (
+                      <div className="mt-2 p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-lg text-xs text-amber-700 dark:text-amber-400 flex items-center justify-between">
+                        <span>Đề tài của bạn đang chờ phê duyệt. Bạn vẫn có thể hủy đăng ký nếu muốn đổi đề tài khác.</span>
+                        <Button variant="destructive" size="sm" onClick={() => myTopic && confirmCancelReg(myTopic)}>
+                          Hủy đăng ký
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Không tìm thấy thông tin chi tiết đề tài.</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
         <TabsContent value="topics" className="mt-4 flex flex-col gap-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative max-w-md flex-1">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-              <Input
-                type="search"
-                placeholder="Tìm theo tên đề tài, giảng viên, lĩnh vực..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="bg-card pl-9"
-                aria-label="Tìm kiếm đề tài"
-              />
+            <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="relative max-w-md flex-1">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                <Input
+                  type="search"
+                  placeholder="Tìm theo tên đề tài, giảng viên, lĩnh vực..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  className="bg-card pl-9"
+                  aria-label="Tìm kiếm đề tài"
+                />
+              </div>
+              <Select value={selectedSemesterFilter} onValueChange={(v) => { if (v) setSelectedSemesterFilter(v) }}>
+                <SelectTrigger className="w-[240px] h-9 text-xs bg-card">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <CalendarRange className="size-3.5 text-muted-foreground shrink-0" />
+                    <span>Đợt: </span>
+                    <SelectValue />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dt-2026-t8">Tháng 8 - 9/2026 (Hiện tại)</SelectItem>
+                  <SelectItem value="dt-2025-1">Đợt 1 - HK I 2025-2026 (Quá khứ)</SelectItem>
+                  <SelectItem value="all">Tất cả các đợt</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={topicSortBy} onValueChange={(v: any) => setTopicSortBy(v)}>
+                <SelectTrigger className="w-[180px] h-9 text-xs bg-card">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <ArrowUpDown className="size-3.5 text-muted-foreground shrink-0" />
+                    <span>Sắp xếp: </span>
+                    <SelectValue />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="approval">Ưu tiên Chờ duyệt</SelectItem>
+                  <SelectItem value="title">Tên đề tài (A - Z)</SelectItem>
+                  <SelectItem value="instructor">Giảng viên (A - Z)</SelectItem>
+                  <SelectItem value="registered">Số SV đăng ký (Giảm dần)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            {role === "instructor" ? (
+            {(role === "instructor" || role === "student") ? (
               <Button className="gap-2" onClick={openCreate}>
                 <Plus className="size-4" aria-hidden="true" />
                 Tạo đề tài mới
@@ -364,7 +562,7 @@ export function TopicsView() {
                               size="sm"
                               className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-700 dark:hover:bg-emerald-600 gap-1 border-0"
                               disabled={t.approval === "approved"}
-                              onClick={() => setApproval(t.id, "approved")}
+                              onClick={() => sendProcessRequest(t.id, "approved")}
                             >
                               <Check className="size-3.5" aria-hidden="true" />
                               Phê duyệt
@@ -373,7 +571,7 @@ export function TopicsView() {
                               size="sm"
                               className="bg-red-600 hover:bg-red-700 text-white dark:bg-red-700 dark:hover:bg-red-600 gap-1 border-0"
                               disabled={t.approval === "rejected"}
-                              onClick={() => setApproval(t.id, "rejected")}
+                              onClick={() => sendProcessRequest(t.id, "rejected")}
                             >
                               <X className="size-3.5" aria-hidden="true" />
                               Từ chối
@@ -413,24 +611,57 @@ export function TopicsView() {
                           {t.registered}/{t.capacity}
                         </span>
                       </span>
+
+                      {regs.filter((r) => r.topicTitle === t.title).length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-dashed border-border flex flex-col gap-1.5">
+                          <span className="font-semibold text-xs text-foreground">Sinh viên đăng ký:</span>
+                          <div className="flex flex-col gap-1 pl-1">
+                            {regs
+                              .filter((r) => r.topicTitle === t.title)
+                              .map((r) => (
+                                <div key={r.id} className="flex items-center justify-between text-xs">
+                                  <span className="text-foreground font-medium">{r.student}</span>
+                                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                    r.status === "approved"
+                                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300"
+                                  }`}>
+                                    {r.status === "approved" ? "Đã duyệt" : "Chờ duyệt"}
+                                  </span>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                     <CardFooter className="flex flex-col gap-2">
                       {/* Student actions */}
                       {role === "student" ? (
                         t.mine ? (
-                          <Button variant="outline" className="w-full gap-2" onClick={() => confirmCancelReg(t)}>
-                            <X className="size-4" aria-hidden="true" />
-                            Hủy đăng ký
-                          </Button>
+                          studentReg?.status === "approved" ? (
+                            <Button variant="secondary" disabled className="w-full bg-emerald-600/10 text-emerald-600 border border-emerald-600/30 font-medium cursor-not-allowed">
+                              ✓ Đã duyệt chính thức (Không thể hủy)
+                            </Button>
+                          ) : (
+                            <Button variant="outline" className="w-full gap-2 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => confirmCancelReg(t)}>
+                              <X className="size-4" aria-hidden="true" />
+                              Hủy đăng ký (Chờ duyệt)
+                            </Button>
+                          )
                         ) : (
-                          <Button className="w-full" disabled={isFull || t.approval !== "approved"} onClick={() => register(t.id)}>
-                            {isFull ? "Đã đầy" : t.approval !== "approved" ? "Chưa duyệt" : "Đăng ký"}
+                          <Button
+                            className="w-full"
+                            variant={hasRegistered || isFull || t.approval !== "approved" ? "outline" : "default"}
+                            disabled={isFull || t.approval !== "approved" || hasRegistered}
+                            onClick={() => sendRegistrationRequest(t.id)}
+                          >
+                            {hasRegistered ? "Đã đăng ký đề tài khác" : isFull ? "Đã đầy" : t.approval !== "approved" ? "Đề tài chưa duyệt" : "Đăng ký đề tài này"}
                           </Button>
                         )
                       ) : null}
 
-                      {/* Instructor actions */}
-                      {role === "instructor" ? (
+                      {/* Instructor/Student proposed topic actions */}
+                      {role === "instructor" || (role === "student" && t.approval === "pending" && (t.creator === user?.name || t.instructor === "tôi" || t.instructor === user?.name)) ? (
                         <div className="flex w-full gap-2">
                           <Button variant="outline" className="flex-1 gap-2" onClick={() => openEdit(t)}>
                             <Pencil className="size-4" aria-hidden="true" />
@@ -494,7 +725,7 @@ export function TopicsView() {
                             <div className="flex items-center justify-end gap-2">
                               {r.status === "pending" ? (
                                 <>
-                                  <Button size="sm" className="gap-1" onClick={() => setRegStatus(r.id, "approved")}>
+                                  <Button size="sm" className="gap-1" onClick={() => sendApprovalRequest(r.id, "approved")}>
                                     <Check className="size-4" aria-hidden="true" />
                                     Duyệt
                                   </Button>
@@ -502,7 +733,7 @@ export function TopicsView() {
                                     size="sm"
                                     variant="outline"
                                     className="gap-1 text-destructive hover:text-destructive"
-                                    onClick={() => setRegStatus(r.id, "rejected")}
+                                    onClick={() => sendApprovalRequest(r.id, "rejected")}
                                   >
                                     <X className="size-4" aria-hidden="true" />
                                     Từ chối
