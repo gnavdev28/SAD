@@ -1,14 +1,105 @@
 import { NextResponse } from 'next/server'
 import { readDB, writeDB } from '@/lib/db-server'
 
+function queryDatabase() {
+  return readDB()
+}
+
+function saveReportAndUpdateStatus(db: any, fileName: string, progressPercent: number, studentName: string, topicTitle: string) {
+  const newReport = {
+    id: `r-${Date.now()}`,
+    fileName,
+    submittedDate: new Date().toLocaleDateString('vi-VN'),
+    status: 'pending' as const,
+    student: studentName,
+    progress: Number(progressPercent)
+  }
+  db.reportFiles.unshift(newReport)
+
+  const sName = studentName.trim()
+  let found = false
+  db.studentProgress = (db.studentProgress || []).map((p: any) => {
+    const pName = p.student.trim()
+    const isMatch = pName === sName || pName.includes(sName) || sName.includes(pName)
+    if (isMatch) {
+      found = true
+      return { 
+        ...p, 
+        progress: Number(progressPercent), 
+        lastReport: fileName 
+      }
+    }
+    return p
+  })
+
+  // If student was not in studentProgress, auto-add them!
+  if (!found) {
+    const reg = (db.registrations || []).find((r: any) => {
+      const rName = r.student.trim()
+      return rName === sName || rName.includes(sName) || sName.includes(rName)
+    })
+    const assignedTopic = reg ? reg.topicTitle : topicTitle
+    const topicObj = (db.topics || []).find((t: any) => t.title === assignedTopic)
+    const assignedInstructor = topicObj ? topicObj.instructor : "TS. Nguyễn Văn An"
+
+    db.studentProgress.push({
+      id: `p-${Date.now()}`,
+      student: studentName,
+      topicTitle: assignedTopic,
+      progress: Number(progressPercent),
+      lastReport: fileName,
+      instructor: assignedInstructor,
+      semesterId: "dt-2026-t8",
+      isLocked: false
+    })
+  }
+
+  if (db.progressChart.length > 0) {
+    const lastWeek = db.progressChart[db.progressChart.length - 1]
+    lastWeek.submitted += 1
+  }
+
+  writeDB(db)
+}
+
+function saveExtensionRequest(db: any, reason: string, days: number, studentName: string) {
+  db.extensionRequests.unshift({
+    id: `ex-${Date.now()}`,
+    student: studentName,
+    reason,
+    days: Number(days),
+    status: 'pending'
+  })
+  writeDB(db)
+}
+
+function updateStatusAndDeadlineInDB(db: any, id: string, status: 'approved' | 'rejected') {
+  db.extensionRequests = db.extensionRequests.map((ex: any) => 
+    ex.id === id ? { ...ex, status } : ex
+  )
+  writeDB(db)
+}
+
 export async function GET() {
   try {
-    const db = readDB()
+    const db = queryDatabase()
+    const mergedProgress = (db.studentProgress || []).map((p: any) => {
+      const ra = (db.reviewAssignments || []).find((r: any) => {
+        const rName = r.student.trim()
+        const pName = p.student.trim()
+        return rName === pName || rName.includes(pName) || pName.includes(rName)
+      })
+      return {
+        ...p,
+        grade: p.grade !== undefined && p.grade !== null ? p.grade : ra?.instructorGrade,
+        comment: p.comment ? p.comment : ra?.instructorComment
+      }
+    })
     return NextResponse.json({
       success: true,
       reportFiles: db.reportFiles,
       extensionRequests: db.extensionRequests,
-      studentProgress: db.studentProgress,
+      studentProgress: mergedProgress,
       progressChart: db.progressChart
     })
   } catch (error) {
@@ -24,31 +115,7 @@ export async function POST(request: Request) {
 
     if (action === 'submit_report') {
       const { fileName, progressPercent, studentName, topicTitle } = body
-      
-      // 1. Add to report files list
-      const newReport = {
-        id: `r-${Date.now()}`,
-        fileName,
-        submittedDate: new Date().toLocaleDateString('vi-VN'),
-        status: 'pending' as const
-      }
-      db.reportFiles.unshift(newReport)
-
-      // 2. Update student progress
-      db.studentProgress = db.studentProgress.map(p => 
-        p.student === studentName 
-          ? { ...p, progress: Number(progressPercent), lastReport: fileName.split('_')[1] || "Báo cáo" }
-          : p
-      )
-
-      // 3. Update chart
-      if (db.progressChart.length > 0) {
-        // Increment the last week's submissions
-        const lastWeek = db.progressChart[db.progressChart.length - 1]
-        lastWeek.submitted += 1
-      }
-
-      writeDB(db)
+      saveReportAndUpdateStatus(db, fileName, Number(progressPercent), studentName, topicTitle)
       return NextResponse.json({ 
         success: true, 
         reportFiles: db.reportFiles, 
@@ -59,11 +126,39 @@ export async function POST(request: Request) {
 
     if (action === 'grade_report') {
       const { id, status } = body
-      db.reportFiles = db.reportFiles.map(r => 
+      db.reportFiles = db.reportFiles.map((r: any) => 
         r.id === id ? { ...r, status } : r
       )
+      // Nếu duyệt, cập nhật lastReport và max progress trong studentProgress
+      if (status === 'approved') {
+        const approvedFile = db.reportFiles.find((r: any) => r.id === id)
+        if (approvedFile && approvedFile.student) {
+          const sName: string = approvedFile.student
+          db.studentProgress = db.studentProgress.map((p: any) => {
+            const pName: string = p.student
+            const matched = sName === pName || sName.includes(pName) || pName.includes(sName)
+            if (matched) {
+              const studentApprovedFiles = db.reportFiles.filter((r: any) =>
+                r.status === 'approved' &&
+                r.student &&
+                (r.student === sName || r.student.includes(sName) || sName.includes(r.student)) &&
+                r.progress !== undefined
+              )
+              const maxProgress = studentApprovedFiles.length > 0
+                ? Math.max(...studentApprovedFiles.map((r: any) => r.progress))
+                : (approvedFile.progress !== undefined ? approvedFile.progress : p.progress)
+              return {
+                ...p,
+                lastReport: approvedFile.fileName,
+                progress: maxProgress
+              }
+            }
+            return p
+          })
+        }
+      }
       writeDB(db)
-      return NextResponse.json({ success: true, reportFiles: db.reportFiles })
+      return NextResponse.json({ success: true, reportFiles: db.reportFiles, studentProgress: db.studentProgress })
     }
 
     if (action === 'delete_report') {
@@ -75,32 +170,19 @@ export async function POST(request: Request) {
 
     if (action === 'request_extension') {
       const { reason, days, studentName } = body
-      db.extensionRequests.unshift({
-        id: `ex-${Date.now()}`,
-        student: studentName,
-        reason,
-        days: Number(days),
-        status: 'pending'
-      })
-      writeDB(db)
+      saveExtensionRequest(db, reason, Number(days), studentName)
       return NextResponse.json({ success: true, extensionRequests: db.extensionRequests })
     }
 
     if (action === 'approve_extension') {
       const { id } = body
-      db.extensionRequests = db.extensionRequests.map(ex => 
-        ex.id === id ? { ...ex, status: 'approved' } : ex
-      )
-      writeDB(db)
+      updateStatusAndDeadlineInDB(db, id, 'approved')
       return NextResponse.json({ success: true, extensionRequests: db.extensionRequests })
     }
 
     if (action === 'reject_extension') {
       const { id } = body
-      db.extensionRequests = db.extensionRequests.map(ex => 
-        ex.id === id ? { ...ex, status: 'rejected' } : ex
-      )
-      writeDB(db)
+      updateStatusAndDeadlineInDB(db, id, 'rejected')
       return NextResponse.json({ success: true, extensionRequests: db.extensionRequests })
     }
 
@@ -109,6 +191,34 @@ export async function POST(request: Request) {
       db.studentProgress = db.studentProgress.map(p => 
         p.id === id ? { ...p, progress: Number(progress) } : p
       )
+      writeDB(db)
+      return NextResponse.json({ success: true, studentProgress: db.studentProgress })
+    }
+
+    if (action === 'save_evaluation') {
+      const { studentName, grade, comment } = body
+      db.studentProgress = db.studentProgress.map((p: any) => {
+        const sName: string = p.student
+        const target: string = studentName
+        const isMatch = sName === target || sName.includes(target) || target.includes(sName)
+        return isMatch ? { ...p, grade: Number(grade), comment } : p
+      })
+
+      if (!db.reviewAssignments) db.reviewAssignments = []
+      db.reviewAssignments = db.reviewAssignments.map((ra: any) => {
+        const sName: string = ra.student
+        const target: string = studentName
+        const isMatch = sName === target || sName.includes(target) || target.includes(sName)
+        return isMatch ? { ...ra, instructorGrade: Number(grade), instructorComment: comment } : ra
+      })
+
+      writeDB(db)
+      return NextResponse.json({ success: true, studentProgress: db.studentProgress, reviewAssignments: db.reviewAssignments })
+    }
+
+    if (action === 'delete_student_progress') {
+      const { id } = body
+      db.studentProgress = db.studentProgress.filter((p: any) => p.id !== id)
       writeDB(db)
       return NextResponse.json({ success: true, studentProgress: db.studentProgress })
     }
