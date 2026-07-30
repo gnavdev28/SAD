@@ -7,8 +7,8 @@ import { SemestersView } from "@/components/views/semesters-view"
 import { TopicsView } from "@/components/views/topics-view"
 import { ProgressView } from "@/components/views/progress-view"
 import { CouncilsView } from "@/components/views/councils-view"
-import ActivityDiagramView from "@/components/views/activity-diagram-view"
 import { AccountsView } from "@/components/views/accounts-view"
+import { StatisticsView } from "@/components/views/statistics-view"
 import { AuthView } from "@/components/auth-view"
 import { cn } from "@/lib/utils"
 
@@ -18,7 +18,7 @@ const viewTitles: Record<ViewKey, string> = {
   topics: "Quản lý đề tài",
   progress: "Tiến độ & Báo cáo",
   councils: "Phản biện & Hội đồng",
-  diagram: "Activity Diagram",
+  statistics: "Báo cáo & Thống kê",
 }
 
 interface UserInfo {
@@ -37,8 +37,24 @@ export default function Page() {
     setMobileOpen(false)
   }
 
+  const handleLoginSuccess = (userInfo: UserInfo) => {
+    setUser(userInfo)
+    const rawRole = (userInfo as any)?.rawRole
+    if (rawRole === "reviewer" || rawRole === "council") {
+      setActiveView("councils")
+    } else if (userInfo.role === "Sinh viên" || userInfo.role === "Giảng viên") {
+      setActiveView("topics")
+    } else {
+      setActiveView("semesters")
+    }
+  }
+
+  const processLogout = () => {
+    setUser(null)
+  }
+
   if (!user) {
-    return <AuthView onLoginSuccess={setUser} />
+    return <AuthView onLoginSuccess={handleLoginSuccess} />
   }
 
   return (
@@ -49,7 +65,7 @@ export default function Page() {
           activeView={activeView}
           onViewChange={handleViewChange}
           user={user}
-          onLogout={() => setUser(null)}
+          onLogout={processLogout}
         />
       </div>
 
@@ -67,7 +83,7 @@ export default function Page() {
               activeView={activeView}
               onViewChange={handleViewChange}
               user={user}
-              onLogout={() => setUser(null)}
+              onLogout={processLogout}
             />
           </div>
         </div>
@@ -91,10 +107,10 @@ export default function Page() {
           <div className="mx-auto max-w-6xl">
             {activeView === "accounts" && <AccountsView />}
             {activeView === "semesters" && <SemestersView />}
-            {activeView === "topics" && <TopicsView />}
-            {activeView === "progress" && <ProgressView />}
-            {activeView === "councils" && <CouncilsView />}
-            {activeView === "diagram" && <ActivityDiagramView />}
+            {activeView === "topics" && <TopicsView user={user} />}
+            {activeView === "progress" && <ProgressView user={user} />}
+            {activeView === "councils" && <CouncilsView user={user} />}
+            {activeView === "statistics" && <StatisticsView />}
           </div>
         </main>
       </div>
