@@ -1,13 +1,26 @@
 import { NextResponse } from 'next/server'
 import { readDB } from '@/lib/db-server'
 
+function fetchUserData(email: string) {
+  const db = readDB()
+  return db.users.find(u => u.email.toLowerCase() === email.toLowerCase())
+}
+
+function createUserObject(user: any) {
+  return {
+    name: user.name,
+    email: user.email,
+    role: user.roleName.includes("Quản trị") || user.role === 'admin' ? "Giáo vụ" : (user.role === 'student' ? "Sinh viên" : "Giảng viên"),
+    rawRole: user.role
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json()
-    const db = readDB()
     
     // Find user in database
-    const user = db.users.find(u => u.email.toLowerCase() === email.toLowerCase())
+    const user = fetchUserData(email)
     
     if (!user) {
       return NextResponse.json(
@@ -25,14 +38,11 @@ export async function POST(request: Request) {
       )
     }
 
+    const userObject = createUserObject(user)
+
     return NextResponse.json({
       success: true,
-      user: {
-        name: user.name,
-        email: user.email,
-        role: user.roleName.includes("Quản trị") || user.role === 'admin' ? "Giáo vụ" : (user.role === 'student' ? "Sinh viên" : "Giảng viên"),
-        rawRole: user.role
-      }
+      user: userObject
     })
   } catch (error) {
     return NextResponse.json(
