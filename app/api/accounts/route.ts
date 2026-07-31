@@ -1,9 +1,38 @@
 import { NextResponse } from 'next/server'
 import { readDB, writeDB, type UserRole } from '@/lib/db-server'
 
+function queryData() {
+  return readDB()
+}
+
+function insertAccountToDB(db: any, name: string, email: string, role: UserRole, roleName: string, status: any, permissions: any) {
+  db.users.push({
+    id: `u-${Date.now()}`,
+    name,
+    email,
+    role,
+    roleName,
+    status,
+    permissions
+  })
+  writeDB(db)
+}
+
+function updateAccountInDB(db: any, id: string, name: string, email: string, role: UserRole, roleName: string, status: any, permissions: any) {
+  db.users = db.users.map((u: any) => 
+    u.id === id ? { ...u, name, email, role, roleName, status, permissions } : u
+  )
+  writeDB(db)
+}
+
+function deleteAccountInDB(db: any, id: string) {
+  db.users = db.users.filter((u: any) => u.id !== id)
+  writeDB(db)
+}
+
 export async function GET() {
   try {
-    const db = readDB()
+    const db = queryData()
     return NextResponse.json({
       success: true,
       users: db.users
@@ -32,30 +61,18 @@ export async function POST(request: Request) {
       const roleName = roleNames[role as UserRole] || "Người dùng"
 
       if (id) {
-        // Edit
-        db.users = db.users.map(u => 
-          u.id === id ? { ...u, name, email, role: role as UserRole, roleName, status, permissions } : u
-        )
+        // Edit / Assign Role
+        updateAccountInDB(db, id, name, email, role as UserRole, roleName, status, permissions)
       } else {
         // Create
-        db.users.push({
-          id: `u-${Date.now()}`,
-          name,
-          email,
-          role: role as UserRole,
-          roleName,
-          status,
-          permissions
-        })
+        insertAccountToDB(db, name, email, role as UserRole, roleName, status, permissions)
       }
-      writeDB(db)
       return NextResponse.json({ success: true, users: db.users })
     }
 
     if (action === 'delete_user') {
       const { id } = body
-      db.users = db.users.filter(u => u.id !== id)
-      writeDB(db)
+      deleteAccountInDB(db, id)
       return NextResponse.json({ success: true, users: db.users })
     }
 

@@ -117,10 +117,14 @@ export function AccountsView() {
   const [permissions, setPermissions] = useState<string[]>([])
 
   useEffect(() => {
-    fetchData()
+    requestAccountList()
   }, [])
 
-  async function fetchData() {
+  async function requestAccountList() {
+    await getAccountList()
+  }
+
+  async function getAccountList() {
     try {
       const res = await fetch("/api/accounts")
       const data = await res.json()
@@ -148,9 +152,14 @@ export function AccountsView() {
     setEditOpen(true)
   }
 
-  async function handleSavePermissions() {
+  async function requestAssignRole() {
     if (!editingUser) return
+    await saveRoleAssignment()
+    setEditOpen(false)
+  }
 
+  async function saveRoleAssignment() {
+    if (!editingUser) return
     try {
       const res = await fetch("/api/accounts", {
         method: "POST",
@@ -172,7 +181,6 @@ export function AccountsView() {
     } catch (err) {
       console.error("Error saving permissions:", err)
     }
-    setEditOpen(false)
   }
 
   async function toggleLock(id: string) {
@@ -251,7 +259,7 @@ export function AccountsView() {
             </div>
             <div className="flex items-center gap-2">
               <Filter className="size-4 text-muted-foreground" />
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <Select value={roleFilter} onValueChange={(val) => setRoleFilter(val || "all")}>
                 <SelectTrigger className="w-44 bg-card">
                   <SelectValue placeholder="Lọc vai trò..." />
                 </SelectTrigger>
@@ -458,7 +466,7 @@ export function AccountsView() {
             <Button variant="outline" onClick={() => setEditOpen(false)}>
               Hủy
             </Button>
-            <Button onClick={handleSavePermissions}>
+            <Button onClick={requestAssignRole}>
               Lưu phân quyền
             </Button>
           </DialogFooter>
