@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { GraduationCap, Lock, Mail, Type, ShieldCheck, AlertCircle, X, ArrowLeft, Eye, EyeOff, UserSquare2 } from "lucide-react"
+import { GraduationCap, Lock, Mail, Type, AlertCircle, X, ArrowLeft, Eye, EyeOff, UserSquare2 } from "lucide-react"
 
 type AuthState = "login" | "login_failed" | "register"
 type Role = "student" | "lecturer"
@@ -24,8 +24,12 @@ export function AuthView({ onLoginSuccess }: AuthViewProps) {
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const requestLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    await authenticateUser()
+  }
+
+  const authenticateUser = async () => {
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
@@ -44,10 +48,13 @@ export function AuthView({ onLoginSuccess }: AuthViewProps) {
     }
   }
 
-  const handleRegister = (e: React.FormEvent) => {
+  const registerAccount = (e: React.FormEvent) => {
     e.preventDefault()
     if (!termsAccepted) return
-    
+    saveUserAccount()
+  }
+
+  const saveUserAccount = () => {
     // Simulate successful registration by logging in
     onLoginSuccess({
       name: fullName || (role === "student" ? "Sinh viên Mới" : "Giảng viên Mới"),
@@ -56,14 +63,7 @@ export function AuthView({ onLoginSuccess }: AuthViewProps) {
     })
   }
 
-  const handleSSOLogin = () => {
-    // Quick bypass for testing or demonstration
-    onLoginSuccess({
-      name: "Người dùng SSO",
-      email: "sso.user@st.phenikaa-uni.edu.vn",
-      role: "Giáo vụ"
-    })
-  }
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 sm:px-6 lg:px-8 font-sans">
@@ -136,7 +136,7 @@ export function AuthView({ onLoginSuccess }: AuthViewProps) {
         {/* FORMS */}
         {state !== "register" ? (
           /* LOGIN FORM */
-          <form className="mt-6 space-y-5" onSubmit={handleLogin}>
+          <form className="mt-6 space-y-5" onSubmit={requestLogin}>
             <div className="space-y-1.5">
               <label htmlFor="email" className="block text-xs font-bold tracking-wider text-slate-600 uppercase">
                 Tên đăng nhập / Email trường
@@ -223,23 +223,90 @@ export function AuthView({ onLoginSuccess }: AuthViewProps) {
               </button>
             </div>
 
-            <div className="relative my-6 flex items-center justify-center">
+            <div className="relative my-4 flex items-center justify-center">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-slate-100"></div>
               </div>
-              <span className="relative bg-white px-4 text-xs font-bold tracking-wider text-slate-400 uppercase">
-                Hoặc kết nối qua
+              <span className="relative bg-white px-3 text-[11px] font-bold tracking-wider text-slate-400 uppercase">
+                Tài khoản dùng thử (Demo Quick Login)
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={handleSSOLogin}
-              className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-emerald-200/80 bg-emerald-50/30 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 transition-colors active:scale-[0.98] cursor-pointer"
-            >
-              <ShieldCheck className="size-5 text-emerald-600" />
-              Đăng nhập qua cổng SSO trường
-            </button>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("student@st.phenikaa-uni.edu.vn")
+                  setPassword("123456")
+                }}
+                className="flex flex-col items-start p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-colors cursor-pointer"
+              >
+                <span className="font-bold text-slate-800">🎓 SV1: Nguyễn Văn Đạt</span>
+                <span className="text-[11px] text-slate-500">Đang làm đồ án (40%)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("student2@st.phenikaa-uni.edu.vn")
+                  setPassword("123456")
+                }}
+                className="flex flex-col items-start p-2.5 rounded-lg border border-emerald-300/80 bg-emerald-50/50 hover:bg-emerald-100/60 text-left transition-colors cursor-pointer"
+              >
+                <span className="font-bold text-emerald-800">🏆 SV2: Hoàng Văn Khoa</span>
+                <span className="text-[11px] text-emerald-600">Đã xếp lịch &amp; Có điểm (8.5)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("an.nguyen@phenikaa-uni.edu.vn")
+                  setPassword("123456")
+                }}
+                className="flex flex-col items-start p-2.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-colors cursor-pointer"
+              >
+                <span className="font-bold text-slate-800">👨‍🏫 GVHD: TS. Nguyễn Văn An</span>
+                <span className="text-[11px] text-slate-500">Hướng dẫn &amp; Duyệt tiến độ</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("dung.pham@phenikaa-uni.edu.vn")
+                  setPassword("123456")
+                }}
+                className="flex flex-col items-start p-2.5 rounded-lg border border-amber-200 bg-amber-50/50 hover:bg-amber-100/60 text-left transition-colors cursor-pointer"
+              >
+                <span className="font-bold text-amber-900">✍️ GVPB: PGS.TS. Phạm Minh Dũng</span>
+                <span className="text-[11px] text-amber-700">Chấm điểm &amp; Nhận xét PB</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("cuong.le@phenikaa-uni.edu.vn")
+                  setPassword("123456")
+                }}
+                className="flex flex-col items-start p-2.5 rounded-lg border border-purple-200 bg-purple-50/50 hover:bg-purple-100/60 text-left transition-colors cursor-pointer"
+              >
+                <span className="font-bold text-purple-900">🏛️ HỘI ĐỒNG: TS. Lê Hoàng Cường</span>
+                <span className="text-[11px] text-purple-700">Chấm điểm bảo vệ trực tiếp</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("admin@phenikaa-uni.edu.vn")
+                  setPassword("admin123")
+                }}
+                className="flex flex-col items-start p-2.5 rounded-lg border border-blue-200 bg-blue-50/50 hover:bg-blue-100/60 text-left transition-colors cursor-pointer"
+              >
+                <span className="font-bold text-blue-800">🛡️ QPT Đồ án (Admin)</span>
+                <span className="text-[11px] text-blue-600">Quản trị toàn hệ thống</span>
+              </button>
+            </div>
+
+
 
             <p className="text-center text-xs text-slate-400 mt-6">
               Hỗ trợ kỹ thuật: <a href="mailto:it-support@school.edu.vn" className="hover:underline">it-support@school.edu.vn</a>
@@ -247,7 +314,7 @@ export function AuthView({ onLoginSuccess }: AuthViewProps) {
           </form>
         ) : (
           /* REGISTRATION FORM */
-          <form className="mt-6 space-y-4" onSubmit={handleRegister}>
+          <form className="mt-6 space-y-4" onSubmit={registerAccount}>
             {/* SEGMENTED TAB SELECTOR */}
             <div className="grid grid-cols-2 rounded-xl bg-slate-100 p-1 mb-4">
               <button
