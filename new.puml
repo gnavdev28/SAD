@@ -1,0 +1,1838 @@
+' ==========================================
+' 1. Hình 3.1 - Sơ đồ tuần tự chức năng Đăng nhập
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NguoiDung
+boundary DangNhapForm
+control DangNhapController
+control DangNhapAPI
+entity NguoiDungEntity
+database CSDL
+
+NguoiDung -> DangNhapForm : 1. clickLoginTab()
+activate DangNhapForm
+DangNhapForm -> DangNhapForm : 2. showLoginForm()
+deactivate DangNhapForm
+
+NguoiDung -> DangNhapForm : 3. inputCredentials()
+activate DangNhapForm
+DangNhapForm -> DangNhapController : 4. requestLogin()
+deactivate DangNhapForm
+
+activate DangNhapController
+DangNhapController -> DangNhapAPI : 5. authenticateUser()
+deactivate DangNhapController
+
+activate DangNhapAPI
+DangNhapAPI -> CSDL : 6. fetchUserData()
+deactivate DangNhapAPI
+
+activate CSDL
+deactivate CSDL
+
+activate DangNhapController
+DangNhapController -> NguoiDungEntity : 7. createUserObject()
+deactivate DangNhapController
+
+activate NguoiDungEntity
+deactivate NguoiDungEntity
+
+activate DangNhapForm
+DangNhapForm -> DangNhapForm : 8. showLoginStatus()
+deactivate DangNhapForm
+
+NguoiDung -> DangNhapForm : 9. clickRegisterTab()
+activate DangNhapForm
+DangNhapForm -> DangNhapForm : 10. showRegisterForm()
+deactivate DangNhapForm
+
+NguoiDung -> DangNhapForm : 11. inputRegisterInfo()
+activate DangNhapForm
+DangNhapForm -> DangNhapController : 12. registerAccount()
+deactivate DangNhapForm
+
+activate DangNhapController
+DangNhapController -> NguoiDungEntity : 13. createUserObject()
+deactivate DangNhapController
+        
+activate NguoiDungEntity
+deactivate NguoiDungEntity
+
+activate DangNhapController
+DangNhapController -> DangNhapAPI : 14. saveUserAccount()
+deactivate DangNhapController
+
+activate DangNhapAPI
+DangNhapAPI -> CSDL : 15. insertUserToDB()
+deactivate DangNhapAPI
+
+activate CSDL
+deactivate CSDL
+
+activate DangNhapForm
+DangNhapForm -> DangNhapForm : 16. showRegisterStatus()
+deactivate DangNhapForm
+
+NguoiDung -> DangNhapForm : 17. clickChangePasswordTab()
+activate DangNhapForm
+DangNhapForm -> DangNhapController : 18. getUserInfo()
+deactivate DangNhapForm
+
+activate DangNhapController
+DangNhapController -> NguoiDungEntity : 19. fetchUserInfo()
+deactivate DangNhapController
+
+activate NguoiDungEntity
+deactivate NguoiDungEntity
+
+activate DangNhapForm
+DangNhapForm -> DangNhapForm : 20. showChangePasswordForm()
+deactivate DangNhapForm
+
+NguoiDung -> DangNhapForm : 21. submitNewPassword()
+activate DangNhapForm
+DangNhapForm -> DangNhapController : 22. updatePassword()
+deactivate DangNhapForm
+
+activate DangNhapController
+DangNhapController -> NguoiDungEntity : 23. setNewPassword()
+deactivate DangNhapController
+        
+activate NguoiDungEntity
+deactivate NguoiDungEntity
+
+activate DangNhapController
+DangNhapController -> DangNhapAPI : 24. saveNewPassword()
+deactivate DangNhapController
+
+activate DangNhapAPI
+DangNhapAPI -> CSDL : 25. updatePasswordInDB()
+deactivate DangNhapAPI
+
+activate CSDL
+deactivate CSDL
+
+activate DangNhapForm
+DangNhapForm -> DangNhapForm : 26. showChangePasswordStatus()
+deactivate DangNhapForm
+@enduml
+
+' ==========================================
+' 2. Hình 3.2 - Sơ đồ tuần tự chức năng Đăng xuất
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NguoiDung
+boundary DangXuatForm
+control DangXuatController
+control DangXuatAPI
+entity NguoiDungEntity
+database CSDL
+
+NguoiDung -> DangXuatForm : 1. clickLogoutTab()
+activate DangXuatForm
+DangXuatForm -> DangXuatForm : 2. showLogoutOptions()
+deactivate DangXuatForm
+
+NguoiDung -> DangXuatForm : 3. clickLogoutButton()
+activate DangXuatForm
+deactivate DangXuatForm
+
+activate DangXuatForm
+DangXuatForm -> DangXuatForm : 4. showLogoutConfirmation()
+deactivate DangXuatForm
+
+NguoiDung -> DangXuatForm : 5. confirmLogout()
+activate DangXuatForm
+DangXuatForm -> DangXuatController : 6. processLogout()
+deactivate DangXuatForm
+
+activate DangXuatController
+DangXuatController -> DangXuatAPI : 7. requestLogout()
+deactivate DangXuatController
+
+activate DangXuatAPI
+DangXuatAPI -> CSDL : 8. clearSession()
+deactivate DangXuatAPI
+
+activate CSDL
+deactivate CSDL
+
+activate DangXuatController
+DangXuatController -> NguoiDungEntity : 9. destroyUserObject()
+deactivate DangXuatController
+
+activate NguoiDungEntity
+deactivate NguoiDungEntity
+
+activate DangXuatForm
+DangXuatForm -> DangXuatForm : 10. redirectToLogin()
+deactivate DangXuatForm
+@enduml
+
+' ==========================================
+' 3. Hình 3.3 - Quản lý tài khoản và phân quyền
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NPTDA
+boundary QLTaiKhoanForm
+control QLTaiKhoanController
+entity TaiKhoan
+entity VaiTro
+control NguoiDungAPI
+database CSDL
+
+NPTDA -> QLTaiKhoanForm : 1. clickManageAccounts()
+activate QLTaiKhoanForm
+QLTaiKhoanForm -> QLTaiKhoanController : 2. requestAccountList()
+activate QLTaiKhoanController
+QLTaiKhoanController -> NguoiDungAPI : 3. getAccountList()
+activate NguoiDungAPI
+NguoiDungAPI -> CSDL : 4. queryData()
+activate CSDL
+CSDL --> NguoiDungAPI : 5. returnAccountData()
+deactivate CSDL
+NguoiDungAPI --> QLTaiKhoanController : 6. returnAccountList()
+deactivate NguoiDungAPI
+QLTaiKhoanController --> QLTaiKhoanForm : 7. displayAccountsAndRoles()
+deactivate QLTaiKhoanController
+deactivate QLTaiKhoanForm
+
+NPTDA -> QLTaiKhoanForm : 8. clickAddAccount()
+activate QLTaiKhoanForm
+QLTaiKhoanForm -> QLTaiKhoanForm : 9. showAddAccountForm()
+deactivate QLTaiKhoanForm
+
+NPTDA -> QLTaiKhoanForm : 10. inputAccountInfo()
+activate QLTaiKhoanForm
+QLTaiKhoanForm -> QLTaiKhoanController : 11. requestAddAccount()
+activate QLTaiKhoanController
+QLTaiKhoanController -> TaiKhoan : 12. createAccount()
+activate TaiKhoan
+deactivate TaiKhoan
+QLTaiKhoanController -> NguoiDungAPI : 13. saveAccount()
+activate NguoiDungAPI
+NguoiDungAPI -> CSDL : 14. insertAccountToDB()
+activate CSDL
+CSDL --> NguoiDungAPI : 15. returnSuccess()
+deactivate CSDL
+NguoiDungAPI --> QLTaiKhoanController : 16. returnSuccess()
+deactivate NguoiDungAPI
+QLTaiKhoanController --> QLTaiKhoanForm : 17. returnAddSuccess()
+deactivate QLTaiKhoanController
+QLTaiKhoanForm --> NPTDA : 18. showSuccessAndRefresh()
+deactivate QLTaiKhoanForm
+
+NPTDA -> QLTaiKhoanForm : 19. clickEditAccount()
+activate QLTaiKhoanForm
+deactivate QLTaiKhoanForm
+
+NPTDA -> QLTaiKhoanForm : 20. selectAccountToEdit()
+activate QLTaiKhoanForm
+deactivate QLTaiKhoanForm
+
+activate QLTaiKhoanForm
+QLTaiKhoanForm -> QLTaiKhoanForm : 21. showEditAccountForm()
+deactivate QLTaiKhoanForm
+
+NPTDA -> QLTaiKhoanForm : 22. inputEditInfo()
+activate QLTaiKhoanForm
+QLTaiKhoanForm -> QLTaiKhoanController : 23. requestUpdateAccount()
+activate QLTaiKhoanController
+QLTaiKhoanController -> TaiKhoan : 24. updateInfo()
+activate TaiKhoan
+deactivate TaiKhoan
+QLTaiKhoanController -> NguoiDungAPI : 25. updateAccount()
+activate NguoiDungAPI
+NguoiDungAPI -> CSDL : 26. updateAccountInDB()
+activate CSDL
+CSDL --> NguoiDungAPI : 27. returnSuccess()
+deactivate CSDL
+NguoiDungAPI --> QLTaiKhoanController : 28. returnSuccess()
+deactivate NguoiDungAPI
+QLTaiKhoanController --> QLTaiKhoanForm : 29. returnUpdateSuccess()
+deactivate QLTaiKhoanController
+QLTaiKhoanForm --> NPTDA : 30. showSuccessAndRefresh()
+deactivate QLTaiKhoanForm
+
+NPTDA -> QLTaiKhoanForm : 31. clickDeleteAccount()
+activate QLTaiKhoanForm
+deactivate QLTaiKhoanForm
+
+NPTDA -> QLTaiKhoanForm : 32. selectAccountToDelete()
+activate QLTaiKhoanForm
+QLTaiKhoanForm -> QLTaiKhoanController : 33. requestDeleteAccount()
+activate QLTaiKhoanController
+QLTaiKhoanController -> NguoiDungAPI : 34. deleteAccount()
+activate NguoiDungAPI
+NguoiDungAPI -> CSDL : 35. deleteAccountInDB()
+activate CSDL
+CSDL --> NguoiDungAPI : 36. returnSuccess()
+deactivate CSDL
+NguoiDungAPI --> QLTaiKhoanController : 37. returnSuccess()
+deactivate NguoiDungAPI
+QLTaiKhoanController --> QLTaiKhoanForm : 38. returnDeleteSuccess()
+deactivate QLTaiKhoanController
+QLTaiKhoanForm --> NPTDA : 39. showSuccessAndRefresh()
+deactivate QLTaiKhoanForm
+
+NPTDA -> QLTaiKhoanForm : 40. clickAssignRole()
+activate QLTaiKhoanForm
+deactivate QLTaiKhoanForm
+
+NPTDA -> QLTaiKhoanForm : 41. selectAccount()
+activate QLTaiKhoanForm
+deactivate QLTaiKhoanForm
+
+NPTDA -> QLTaiKhoanForm : 42. selectRole()
+activate QLTaiKhoanForm
+QLTaiKhoanForm -> QLTaiKhoanController : 43. requestAssignRole()
+activate QLTaiKhoanController
+QLTaiKhoanController -> VaiTro : 44. updateRole()
+activate VaiTro
+deactivate VaiTro
+QLTaiKhoanController -> NguoiDungAPI : 45. saveRoleAssignment()
+activate NguoiDungAPI
+NguoiDungAPI -> CSDL : 46. updateRoleInDB()
+activate CSDL
+CSDL --> NguoiDungAPI : 47. returnSuccess()
+deactivate CSDL
+NguoiDungAPI --> QLTaiKhoanController : 48. returnSuccess()
+deactivate NguoiDungAPI
+QLTaiKhoanController --> QLTaiKhoanForm : 49. returnAssignSuccess()
+deactivate QLTaiKhoanController
+QLTaiKhoanForm --> NPTDA : 50. showSuccessAndRefresh()
+deactivate QLTaiKhoanForm
+@enduml
+
+' ==========================================
+' 4. Hình 3.4 - Tạo đợt đồ án
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NPTDA
+boundary QLDotDoAnForm
+control QLDotDoAnController
+entity DotDoAn
+control DotDoAnAPI
+database CSDL
+
+NPTDA -> QLDotDoAnForm : 1. clickCreateBatch()
+activate QLDotDoAnForm
+QLDotDoAnForm -> QLDotDoAnForm : 2. showCreateForm()
+deactivate QLDotDoAnForm
+
+NPTDA -> QLDotDoAnForm : 3. inputBatchInfo()
+activate QLDotDoAnForm
+QLDotDoAnForm -> QLDotDoAnController : 4. requestCreateBatch()
+activate QLDotDoAnController
+
+QLDotDoAnController -> DotDoAn : 5. createBatchObject()
+activate DotDoAn
+deactivate DotDoAn
+
+QLDotDoAnController -> DotDoAnAPI : 6. sendBatchObject()
+activate DotDoAnAPI
+
+DotDoAnAPI -> CSDL : 7. insertBatchToDB()
+activate CSDL
+
+CSDL --> DotDoAnAPI : 8. returnSuccess()
+deactivate CSDL
+
+DotDoAnAPI --> QLDotDoAnController : 9. returnResult()
+deactivate DotDoAnAPI
+
+QLDotDoAnController --> QLDotDoAnForm : 10. returnResult()
+deactivate QLDotDoAnController
+
+QLDotDoAnForm --> NPTDA : 11. showSuccessMessage()
+deactivate QLDotDoAnForm
+@enduml
+
+' ==========================================
+' 5. Hình 3.5 - Cập nhật đợt đồ án
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NPTDA
+boundary QLDotDoAnForm
+control QLDotDoAnController
+entity DotDoAn
+control DotDoAnAPI
+database CSDL
+
+NPTDA -> QLDotDoAnForm : 1. clickManageBatch()
+activate QLDotDoAnForm
+QLDotDoAnForm -> QLDotDoAnController : 2. requestBatchList()
+activate QLDotDoAnController
+
+QLDotDoAnController -> DotDoAn : 3. fetchBatchInfo()
+activate DotDoAn
+deactivate DotDoAn
+
+QLDotDoAnController -> DotDoAnAPI : 4. sendListRequest()
+activate DotDoAnAPI
+DotDoAnAPI -> CSDL : 5. queryData()
+activate CSDL
+CSDL --> DotDoAnAPI : 6. returnList()
+deactivate CSDL
+
+DotDoAnAPI --> QLDotDoAnController : returnList()
+deactivate DotDoAnAPI
+
+QLDotDoAnController --> QLDotDoAnForm : 7. returnList()
+deactivate QLDotDoAnController
+
+QLDotDoAnForm --> NPTDA : 8. showBatchList()
+deactivate QLDotDoAnForm
+
+NPTDA -> QLDotDoAnForm : 9. selectBatchToEdit()
+activate QLDotDoAnForm
+deactivate QLDotDoAnForm
+
+activate QLDotDoAnForm
+QLDotDoAnForm -> QLDotDoAnForm : 10. showEditForm()
+deactivate QLDotDoAnForm
+
+NPTDA -> QLDotDoAnForm : 11. inputNewInfo()
+activate QLDotDoAnForm
+QLDotDoAnForm -> QLDotDoAnController : 12. sendUpdateRequest()
+activate QLDotDoAnController
+
+QLDotDoAnController -> DotDoAn : 13. updateBatchObject()
+activate DotDoAn
+deactivate DotDoAn
+
+QLDotDoAnController -> DotDoAnAPI : 14. sendUpdatedObject()
+activate DotDoAnAPI
+DotDoAnAPI -> CSDL : 15. updateDB()
+activate CSDL
+CSDL --> DotDoAnAPI : 16. returnSuccess()
+deactivate CSDL
+
+DotDoAnAPI --> QLDotDoAnController : returnResult()
+deactivate DotDoAnAPI
+
+QLDotDoAnController --> QLDotDoAnForm : 17. returnResult()
+deactivate QLDotDoAnController
+
+QLDotDoAnForm --> NPTDA : 18. showSuccessAndRefresh()
+deactivate QLDotDoAnForm
+@enduml
+
+' ==========================================
+' 6. Hình 3.6 - Sơ đồ tuần tự chức năng Đóng - Mở đợt đồ án
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NguoiPhuTrachDoAn
+boundary QuanLyDotDoAnForm
+control QuanLyDotDoAnController
+entity DotDoAn
+control DotDoAnAPI
+database Database
+
+NguoiPhuTrachDoAn -> QuanLyDotDoAnForm : 1. clickManageBatch()
+activate QuanLyDotDoAnForm
+QuanLyDotDoAnForm --> NguoiPhuTrachDoAn : 2. showBatchList()
+deactivate QuanLyDotDoAnForm
+
+NguoiPhuTrachDoAn -> QuanLyDotDoAnForm : 3. clickOpenCloseBatch()
+activate QuanLyDotDoAnForm
+QuanLyDotDoAnForm --> NguoiPhuTrachDoAn : 4. showConfirmDialog()
+deactivate QuanLyDotDoAnForm
+
+NguoiPhuTrachDoAn -> QuanLyDotDoAnForm : 5. confirmStatusChange()
+
+QuanLyDotDoAnForm -> QuanLyDotDoAnController : 6. sendUpdateStatusRequest()
+
+activate QuanLyDotDoAnController
+QuanLyDotDoAnController -> QuanLyDotDoAnController : 7. checkUpdatePermission()
+deactivate QuanLyDotDoAnController
+
+activate QuanLyDotDoAnController
+QuanLyDotDoAnController -> QuanLyDotDoAnController : 8. determineNewStatus()
+deactivate QuanLyDotDoAnController
+
+QuanLyDotDoAnController -> DotDoAn : 9. updateBatchObject()
+
+QuanLyDotDoAnController -> DotDoAnAPI : 10. sendBatchObject()
+
+DotDoAnAPI -> Database : 11. saveBatchStatusToDB()
+activate Database
+Database --> DotDoAnAPI : 12. returnSuccess()
+deactivate Database
+
+DotDoAnAPI --> QuanLyDotDoAnController : 13. returnResult()
+
+QuanLyDotDoAnController --> QuanLyDotDoAnForm : 14. returnUpdateResult()
+
+QuanLyDotDoAnForm --> NguoiPhuTrachDoAn : 15. showSuccessMessage()
+
+@enduml
+
+' ==========================================
+' 7. Hình 3.7 - Sơ đồ tuần tự chức năng Đề xuất đề tài
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor "GVHD/SinhVien" as GVHD_SinhVien
+boundary DeXuatDeTaiForm
+control DeTaiController
+entity DeTai
+control DeTaiAPI
+database Database
+
+GVHD_SinhVien -> DeXuatDeTaiForm : 1. clickProposeTopic()
+activate DeXuatDeTaiForm
+DeXuatDeTaiForm --> GVHD_SinhVien : 2. showProposalForm()
+deactivate DeXuatDeTaiForm
+
+GVHD_SinhVien -> DeXuatDeTaiForm : 3. inputTopicInfo()
+GVHD_SinhVien -> DeXuatDeTaiForm : 4. clickSubmitProposal()
+
+DeXuatDeTaiForm -> DeTaiController : 5. sendProposalRequest()
+
+activate DeTaiController
+DeTaiController -> DeTaiController : 6. validateData()
+deactivate DeTaiController
+
+activate DeTaiController
+DeTaiController -> DeTaiController : 7. createTopicObject()
+deactivate DeTaiController
+
+DeTaiController -> DeTaiAPI : 8. sendTopicObject()
+
+DeTaiAPI -> Database : 9. saveTopicToDB()
+activate Database
+Database --> DeTaiAPI : 10. returnSuccess()
+deactivate Database
+
+DeTaiAPI --> DeTaiController : 11. returnResult()
+
+activate DeTaiController
+DeTaiController -> DeTaiController : 12. updateStatus()
+deactivate DeTaiController
+
+DeTaiController --> DeXuatDeTaiForm : 13. returnResult()
+
+DeXuatDeTaiForm --> GVHD_SinhVien : 14. showSuccessMessage()
+
+@enduml
+
+' ==========================================
+' 8. Hình 3.8 - Sơ đồ tuần tự chức năng Quản lý đề tài
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NguoiPhuTrachDoAn
+boundary QuanLyDeTaiForm
+control DeTaiController
+entity DeTai
+control DeTaiAPI
+database Database
+
+NguoiPhuTrachDoAn -> QuanLyDeTaiForm : 1. clickManageTopics()
+activate QuanLyDeTaiForm
+QuanLyDeTaiForm --> NguoiPhuTrachDoAn : 2. showPendingTopics()
+deactivate QuanLyDeTaiForm
+
+NguoiPhuTrachDoAn -> QuanLyDeTaiForm : 3. selectTopicToView()
+
+QuanLyDeTaiForm -> DeTaiController : 4. requestTopicDetails()
+
+DeTaiController -> DeTaiAPI : 5. fetchTopicInfo()
+
+DeTaiAPI -> Database : 6. readTopicInfo()
+activate Database
+Database --> DeTaiAPI : 7. returnTopicData()
+deactivate Database
+
+DeTaiAPI --> DeTaiController : 8. returnResult()
+
+DeTaiController --> QuanLyDeTaiForm : 9. showTopicDetails()
+
+NguoiPhuTrachDoAn -> QuanLyDeTaiForm : 10. clickApproveOrReject()
+
+QuanLyDeTaiForm -> DeTaiController : 11. sendProcessRequest()
+
+activate DeTaiController
+DeTaiController -> DeTaiController : 12. checkTopicStatus()
+deactivate DeTaiController
+
+activate DeTaiController
+DeTaiController -> DeTaiController : 13. updateTopicStatus()
+deactivate DeTaiController
+
+DeTaiController -> DeTaiAPI : 14. sendTopicObject()
+
+DeTaiAPI -> Database : 15. saveProcessResultToDB()
+activate Database
+Database --> DeTaiAPI : 16. returnSuccess()
+deactivate Database
+
+DeTaiAPI --> DeTaiController : 17. returnResult()
+
+DeTaiController --> QuanLyDeTaiForm : 18. returnProcessResult()
+
+QuanLyDeTaiForm --> NguoiPhuTrachDoAn : 19. showSuccessMessage()
+
+@enduml
+
+' ==========================================
+' 9. Hình 3.9 - Sơ đồ tuần tự chức năng Tra cứu đề tài
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor TatCaNguoiDung
+boundary TraCuuDeTaiForm
+control DeTaiController
+entity DeTai
+control DeTaiAPI
+database Database
+
+TatCaNguoiDung -> TraCuuDeTaiForm : 1. clickSearchTopic()
+activate TraCuuDeTaiForm
+TraCuuDeTaiForm --> TatCaNguoiDung : 2. showTopicList()
+deactivate TraCuuDeTaiForm
+
+TatCaNguoiDung -> TraCuuDeTaiForm : 3. inputKeywordOrFilter()
+TatCaNguoiDung -> TraCuuDeTaiForm : 4. clickSearch()
+
+TraCuuDeTaiForm -> DeTaiController : 5. sendSearchRequest()
+
+activate DeTaiController
+DeTaiController -> DeTaiController : 6. processSearchConditions()
+deactivate DeTaiController
+
+DeTaiController -> DeTaiAPI : 7. requestSearchTopic()
+
+DeTaiAPI -> Database : 8. queryTopicData()
+activate Database
+Database --> DeTaiAPI : 9. returnSearchData()
+deactivate Database
+
+DeTaiAPI --> DeTaiController : 10. returnResult()
+
+DeTaiController --> TraCuuDeTaiForm : 11. returnTopicList()
+
+TraCuuDeTaiForm --> TatCaNguoiDung : 12. showSearchResults()
+
+@enduml
+
+' ==========================================
+' 10. Hình 3.10 - Sơ đồ tuần tự chức năng Đăng ký đề tài
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor SinhVien
+boundary DangKyDeTaiForm
+control DangKyDeTaiController
+entity DangKyDeTai
+control DangKyDeTaiAPI
+database Database
+
+SinhVien -> DangKyDeTaiForm : 1. loginSystem()
+
+SinhVien -> DangKyDeTaiForm : 2. selectRegisterTopic()
+activate DangKyDeTaiForm
+DangKyDeTaiForm --> SinhVien : 3. showApprovedTopics()
+deactivate DangKyDeTaiForm
+
+SinhVien -> DangKyDeTaiForm : 4. searchOrSelectTopic()
+
+DangKyDeTaiForm -> DangKyDeTaiController : 5. requestTopicDetails()
+
+DangKyDeTaiController -> DangKyDeTaiAPI : 6. fetchTopicInfo()
+
+DangKyDeTaiAPI -> Database : 7. readTopicInfo()
+activate Database
+Database --> DangKyDeTaiAPI : 8. returnTopicInfo()
+deactivate Database
+
+DangKyDeTaiAPI --> DangKyDeTaiController : 9. returnResult()
+
+DangKyDeTaiController --> DangKyDeTaiForm : 10. showTopicDetails()
+
+SinhVien -> DangKyDeTaiForm : 11. clickRegister()
+activate DangKyDeTaiForm
+DangKyDeTaiForm -> DangKyDeTaiForm : 12. showConfirmDialog()
+deactivate DangKyDeTaiForm
+
+SinhVien -> DangKyDeTaiForm : 13. confirmRegistration()
+
+DangKyDeTaiForm -> DangKyDeTaiController : 14. sendRegistrationRequest()
+
+activate DangKyDeTaiController
+DangKyDeTaiController -> DangKyDeTaiController : 15. checkConditions()
+deactivate DangKyDeTaiController
+
+activate DangKyDeTaiController
+DangKyDeTaiController -> DangKyDeTaiController : 16. createRegistrationObject()
+deactivate DangKyDeTaiController
+
+DangKyDeTaiController -> DangKyDeTaiAPI : 17. sendSaveRegistration()
+
+DangKyDeTaiAPI -> Database : 18. saveRegistrationToDB()
+activate Database
+Database --> DangKyDeTaiAPI : 19. returnSuccess()
+deactivate Database
+
+DangKyDeTaiAPI --> DangKyDeTaiController : 20. returnResult()
+
+DangKyDeTaiController --> DangKyDeTaiForm : 21. returnRegistrationResult()
+
+DangKyDeTaiForm --> SinhVien : 22. showSuccessMessage()
+
+@enduml
+
+' ==========================================
+' 11. Hình 3.11 - Sơ đồ tuần tự chức năng Xét duyệt kết quả đăng ký
+' ==========================================
+@startuml
+skinparam style strictuml
+hide footbox
+
+actor GVHD
+boundary XetDuyetDangKyForm
+control DangKyDeTaiController
+entity DangKyDeTai
+control DangKyDeTaiAPI
+database Database
+
+GVHD -> XetDuyetDangKyForm : 1. loginSystem()
+GVHD -> XetDuyetDangKyForm : 2. selectApproveRegistration()
+
+XetDuyetDangKyForm -> DangKyDeTaiController : 3. requestRegistrationList()
+activate DangKyDeTaiController
+
+DangKyDeTaiController -> DangKyDeTaiAPI : 4. getRegistrationList()
+activate DangKyDeTaiAPI
+
+DangKyDeTaiAPI -> Database : 5. queryRegistrationList()
+activate Database
+Database --> DangKyDeTaiAPI : 6. returnRegistrationList()
+deactivate Database
+
+DangKyDeTaiAPI --> DangKyDeTaiController : 7. returnResult()
+deactivate DangKyDeTaiAPI
+deactivate DangKyDeTaiController
+
+DangKyDeTaiController --> XetDuyetDangKyForm : 8. showStudentRegistrationList()
+
+GVHD -> XetDuyetDangKyForm : 9. selectApproveOrReject()
+
+XetDuyetDangKyForm -> DangKyDeTaiController : 10. sendApprovalRequest()
+activate DangKyDeTaiController
+
+DangKyDeTaiController -> DangKyDeTaiController : 11. checkApprovalConditions()
+activate DangKyDeTaiController
+deactivate DangKyDeTaiController
+
+DangKyDeTaiController -> DangKyDeTaiController : 12. updateStatus()
+deactivate DangKyDeTaiController
+
+DangKyDeTaiController -> DangKyDeTaiAPI : 13. sendApprovalRequest()
+activate DangKyDeTaiAPI
+
+DangKyDeTaiAPI -> Database : 14. saveApprovalResult()
+activate Database
+Database --> DangKyDeTaiAPI : 15. returnSuccess()
+deactivate Database
+
+DangKyDeTaiAPI --> DangKyDeTaiController : 16. returnResult()
+deactivate DangKyDeTaiAPI
+
+DangKyDeTaiController --> XetDuyetDangKyForm : 17. returnApprovalResult()
+
+XetDuyetDangKyForm --> GVHD : 18. showSuccessMessage()
+
+@enduml
+
+' ==========================================
+' 12. Hình 3.12 - Sơ đồ tuần tự chức năng Theo dõi kết quả đăng ký
+' ==========================================
+@startuml
+skinparam style strictuml
+hide footbox
+
+actor SinhVien
+boundary TheoDoiKetQuaDangKyForm
+control DangKyDeTaiController
+entity DangKyDeTai
+control DangKyDeTaiAPI
+database Database
+
+SinhVien -> TheoDoiKetQuaDangKyForm : 1. selectTrackRegistration()
+activate TheoDoiKetQuaDangKyForm
+TheoDoiKetQuaDangKyForm --> SinhVien : 2. showRegistrationList()
+deactivate TheoDoiKetQuaDangKyForm
+
+SinhVien -> TheoDoiKetQuaDangKyForm : 3. selectTopicToView()
+
+TheoDoiKetQuaDangKyForm -> DangKyDeTaiController : 4. requestViewResult()
+activate DangKyDeTaiController
+
+DangKyDeTaiController -> DangKyDeTaiController : 5. validateInfo()
+deactivate DangKyDeTaiController
+
+DangKyDeTaiController -> DangKyDeTai : 6. fetchRegistrationInfo()
+activate DangKyDeTai
+deactivate DangKyDeTai
+
+DangKyDeTaiController -> DangKyDeTaiAPI : 7. sendQueryRequest()
+activate DangKyDeTaiAPI
+
+DangKyDeTaiAPI -> Database : 8. getRegistrationResult()
+activate Database
+Database --> DangKyDeTaiAPI : 9. returnRegistrationResult()
+deactivate Database
+
+DangKyDeTaiAPI --> DangKyDeTaiController : 10. returnRegistrationInfo()
+deactivate DangKyDeTaiAPI
+
+DangKyDeTaiController --> TheoDoiKetQuaDangKyForm : 11. returnResult()
+deactivate DangKyDeTaiController
+
+TheoDoiKetQuaDangKyForm --> SinhVien : 12. showResult()
+SinhVien --> SinhVien : 13. showRegistrationResult()
+
+@enduml
+
+' ==========================================
+' 13. Hình 3.13 - Sơ đồ tuần tự chức năng Cập nhật tiến độ
+' ==========================================
+@startuml
+skinparam style strictuml
+hide footbox
+
+actor SinhVien
+boundary CapNhatTienDoForm
+control QuanLyTienDoController
+entity TienDo
+control CapNhatTienDoAPI
+database Database
+
+== 1. Tải thông tin tiến độ ==
+SinhVien -> CapNhatTienDoForm : 1. selectUpdateProgress()
+activate CapNhatTienDoForm
+
+CapNhatTienDoForm -> QuanLyTienDoController : 2. requestProgressInfo()
+activate QuanLyTienDoController
+
+QuanLyTienDoController -> TienDo : 3. fetchCurrentProgress()
+activate TienDo
+deactivate TienDo
+
+QuanLyTienDoController -> CapNhatTienDoAPI : 4. sendQueryProgress()
+activate CapNhatTienDoAPI
+
+CapNhatTienDoAPI -> Database : 5. queryProgressData()
+activate Database
+Database --> CapNhatTienDoAPI : 6. returnData()
+deactivate Database
+
+CapNhatTienDoAPI --> QuanLyTienDoController : 7. returnResult()
+deactivate CapNhatTienDoAPI
+
+QuanLyTienDoController --> CapNhatTienDoForm : 8. returnProgressObject()
+deactivate QuanLyTienDoController
+
+CapNhatTienDoForm --> SinhVien : 9. showProgressInfo()
+deactivate CapNhatTienDoForm
+
+SinhVien --> SinhVien : 10. showUIAndCurrentInfo()
+
+== 2. Cập nhật tiến độ mới ==
+SinhVien -> CapNhatTienDoForm : 11. inputAndSubmitProgress()
+activate CapNhatTienDoForm
+
+CapNhatTienDoForm -> QuanLyTienDoController : 12. sendUpdateRequest()
+activate QuanLyTienDoController
+
+QuanLyTienDoController -> QuanLyTienDoController : 13. validateProgressData()
+
+alt [Dữ liệu hợp lệ]
+    QuanLyTienDoController -> TienDo : 14. updateProgressInfo()
+    activate TienDo
+    deactivate TienDo
+
+    QuanLyTienDoController -> CapNhatTienDoAPI : 15. requestSaveData()
+    activate CapNhatTienDoAPI
+
+    CapNhatTienDoAPI -> Database : 16. updateOrInsertRecord()
+    activate Database
+    Database --> CapNhatTienDoAPI : 17. returnSuccess()
+    deactivate Database
+
+    CapNhatTienDoAPI --> QuanLyTienDoController : 18. returnResult()
+    deactivate CapNhatTienDoAPI
+
+    QuanLyTienDoController --> CapNhatTienDoForm : 19. returnUpdateResult()
+    CapNhatTienDoForm --> SinhVien : 20. showSuccessMessage()
+    SinhVien --> SinhVien : 21. displayUpdateSuccess()
+
+else [Dữ liệu không hợp lệ]
+    QuanLyTienDoController --> CapNhatTienDoForm : 22. showErrorMessage()
+    CapNhatTienDoForm --> SinhVien : 23. displayErrorWarning()
+end
+
+deactivate QuanLyTienDoController
+deactivate CapNhatTienDoForm
+
+@enduml
+
+' ==========================================
+' 14. Hình 3.14 - Sơ đồ tuần tự chức năng Quản lý báo cáo tiến độ
+' ==========================================
+@startuml
+skinparam style strictuml
+hide footbox
+
+actor SinhVien
+boundary BaoCaoTienDoForm
+control BaoCaoTienDoController
+entity BaoCaoTienDo
+control BaoCaoTienDoAPI
+database Database
+actor GiangVienHuongDan
+
+SinhVien -> BaoCaoTienDoForm : 1. accessProgressReport()
+activate BaoCaoTienDoForm
+
+BaoCaoTienDoForm -> BaoCaoTienDoController : 2. requestMilestoneInfo()
+activate BaoCaoTienDoController
+
+BaoCaoTienDoController -> BaoCaoTienDoAPI : 3. callQueryMilestoneAPI()
+activate BaoCaoTienDoAPI
+
+BaoCaoTienDoAPI -> Database : 4. queryDatabase()
+activate Database
+Database --> BaoCaoTienDoAPI : 5. returnMilestoneInfo()
+deactivate Database
+
+BaoCaoTienDoAPI --> BaoCaoTienDoController : 6. returnData()
+deactivate BaoCaoTienDoAPI
+
+BaoCaoTienDoController --> BaoCaoTienDoForm : 7. showMilestones()
+deactivate BaoCaoTienDoController
+deactivate BaoCaoTienDoForm
+
+SinhVien -> BaoCaoTienDoForm : 8. uploadReportAndSubmit()
+activate BaoCaoTienDoForm
+
+BaoCaoTienDoForm -> BaoCaoTienDoController : 9. sendSubmitReportRequest()
+activate BaoCaoTienDoController
+
+BaoCaoTienDoController -> BaoCaoTienDoController : 10. validateReportFile()
+
+alt [Ngoại lệ 1, 2, 3: Dung lượng > 50MB / Sai định dạng / Nộp quá hạn]
+    BaoCaoTienDoController --> BaoCaoTienDoForm : 11. returnFileError()
+    BaoCaoTienDoForm --> SinhVien : 12. showErrorWarning()
+
+else [Tệp tin hợp lệ]
+    BaoCaoTienDoController -> BaoCaoTienDoAPI : 13. callSaveReportAPI()
+    activate BaoCaoTienDoAPI
+
+    alt [Ngoại lệ 4: Lỗi tải tệp / Lưu CSDL]
+        BaoCaoTienDoAPI --> BaoCaoTienDoController : 15. returnDatabaseError()
+        BaoCaoTienDoController --> BaoCaoTienDoForm : 16. systemErrorCode()
+        BaoCaoTienDoForm --> SinhVien : 17. returnUploadError()
+        SinhVien --> SinhVien : 18. showUploadErrorMessage()
+    else [Lưu thành công]
+        BaoCaoTienDoAPI -> Database : 14. saveReportAndUpdateStatus()
+        activate Database
+        Database --> BaoCaoTienDoAPI : 19. returnSaveSuccess()
+        deactivate Database
+
+        BaoCaoTienDoAPI --> BaoCaoTienDoController : 20. returnSuccessResult()
+        deactivate BaoCaoTienDoAPI
+
+        BaoCaoTienDoController -> BaoCaoTienDo : 21. initOrUpdateReportRecord()
+        activate BaoCaoTienDo
+        deactivate BaoCaoTienDo
+
+        BaoCaoTienDoController --> BaoCaoTienDoForm : 22. returnSavedReportObject()
+        BaoCaoTienDoForm --> SinhVien : 23. returnSubmitSuccess()
+        SinhVien --> SinhVien : 24. showSubmitSuccessMessage()
+    end
+end
+deactivate BaoCaoTienDoController
+deactivate BaoCaoTienDoForm
+
+== Phần 2: Giảng viên đánh giá ==
+GiangVienHuongDan -> BaoCaoTienDoForm : 25. openStudentReport()
+activate BaoCaoTienDoForm
+
+BaoCaoTienDoForm -> BaoCaoTienDoController : 26. requestReportDetails()
+activate BaoCaoTienDoController
+
+BaoCaoTienDoController -> BaoCaoTienDoAPI : 27. callLoadReportAPI()
+activate BaoCaoTienDoAPI
+
+BaoCaoTienDoAPI -> Database : 28. queryReportFile()
+activate Database
+Database --> BaoCaoTienDoAPI : 29. returnReportData()
+deactivate Database
+
+BaoCaoTienDoAPI --> BaoCaoTienDoController : 30. returnSubmissionData()
+deactivate BaoCaoTienDoAPI
+
+BaoCaoTienDoController --> BaoCaoTienDoForm : 31. showReportDetails()
+deactivate BaoCaoTienDoController
+deactivate BaoCaoTienDoForm
+
+GiangVienHuongDan -> BaoCaoTienDoForm : 32. inputFeedbackAndSelectAction()
+
+alt [Luồng thay thế 8a: Giảng viên yêu cầu chỉnh sửa]
+    GiangVienHuongDan -> BaoCaoTienDoForm : 33. selectRequireRevisionAndSave()
+    activate BaoCaoTienDoForm
+    BaoCaoTienDoForm -> BaoCaoTienDoController : 34. requestUpdateStatusToRevision()
+    activate BaoCaoTienDoController
+
+    BaoCaoTienDoController -> BaoCaoTienDoAPI : 35. updateStatusToRevision()
+    activate BaoCaoTienDoAPI
+    BaoCaoTienDoAPI --> BaoCaoTienDoController : 36. returnUpdateResult()
+    deactivate BaoCaoTienDoAPI
+
+    BaoCaoTienDoController -> BaoCaoTienDoAPI : 37. callSaveStatusAndNotifyAPI()
+    activate BaoCaoTienDoAPI
+    BaoCaoTienDoAPI -> Database : 38. updateStatusInDB()
+    activate Database
+    Database --> BaoCaoTienDoAPI : 39. confirmUpdate()
+    deactivate Database
+    BaoCaoTienDoAPI --> BaoCaoTienDoController : 40. confirmNotificationSent()
+    deactivate BaoCaoTienDoAPI
+
+    BaoCaoTienDoController --> BaoCaoTienDoForm : 41. returnRevisionRequestSent()
+    deactivate BaoCaoTienDoController
+    
+    BaoCaoTienDoForm --> GiangVienHuongDan : 42. showStatusChangedMessage()
+    deactivate BaoCaoTienDoForm
+    
+    SinhVien --> SinhVien : 43. notifyStudentToResubmit()
+
+else [Luồng thông thường: Giảng viên lưu kết quả đánh giá]
+    GiangVienHuongDan -> BaoCaoTienDoForm : 44. clickSaveEvaluation()
+    activate BaoCaoTienDoForm
+    BaoCaoTienDoForm -> BaoCaoTienDoController : 45. sendEvaluationResult()
+    activate BaoCaoTienDoController
+
+    BaoCaoTienDoController -> BaoCaoTienDo : 46. updateEvaluationAndStatus()
+    activate BaoCaoTienDo
+    deactivate BaoCaoTienDo
+
+    BaoCaoTienDoController --> BaoCaoTienDoForm : 47. returnCompletedReportObject()
+
+    BaoCaoTienDoController -> BaoCaoTienDoAPI : 48. callSaveResultAndNotifyAPI()
+    activate BaoCaoTienDoAPI
+
+    BaoCaoTienDoAPI -> Database : 49. updateEvaluationInDB()
+    activate Database
+    Database --> BaoCaoTienDoAPI : 50. confirmSaveSuccess()
+    deactivate Database
+
+    BaoCaoTienDoAPI --> BaoCaoTienDoController : 51. confirmNotificationSuccess()
+    deactivate BaoCaoTienDoAPI
+
+    BaoCaoTienDoController --> BaoCaoTienDoForm : 52. returnSaveEvaluationSuccess()
+    deactivate BaoCaoTienDoController
+
+    BaoCaoTienDoForm --> GiangVienHuongDan : 53. showEvaluationSavedMessage()
+    deactivate BaoCaoTienDoForm
+
+    SinhVien --> SinhVien : 54. notifyStudentOfNewResult()
+end
+
+@enduml
+
+' ==========================================
+' 15. Hình 3.15 - Sơ đồ tuần tự chức năng Gửi đơn xin gia hạn
+' ==========================================
+@startuml
+skinparam style strictuml
+hide footbox
+
+actor SinhVien
+boundary GiaHanForm
+control GiaHanController
+entity DonGiaHan
+control GiaHanAPI
+database Database
+
+SinhVien -> GiaHanForm : 1. requestCreateExtension()
+GiaHanForm -> GiaHanController : 2. checkExtensionConditions()
+activate GiaHanController
+
+GiaHanController -> GiaHanAPI : 3. fetchProjectInfo()
+activate GiaHanAPI
+
+GiaHanAPI -> Database : 4. queryProjectTimeAndStatus()
+activate Database
+Database --> GiaHanAPI : 5. returnBatchInfo()
+deactivate Database
+
+GiaHanAPI --> GiaHanController : 6. returnValidationResult()
+deactivate GiaHanAPI
+deactivate GiaHanController
+
+GiaHanController --> GiaHanForm : 7. allowShowForm()
+
+SinhVien -> GiaHanForm : 8. showExtensionForm()
+SinhVien -> GiaHanForm : 9. inputReasonAndSubmit()
+
+GiaHanForm -> GiaHanController : 10. submitExtensionRequest()
+activate GiaHanController
+
+GiaHanController -> GiaHanController : 11. validateInput()
+
+GiaHanController -> DonGiaHan : 12. createExtensionRequest()
+activate DonGiaHan
+deactivate DonGiaHan
+
+GiaHanController -> GiaHanAPI : 13. initExtensionObject()
+activate GiaHanAPI
+
+GiaHanAPI -> Database : 14. saveExtensionRequest()
+activate Database
+Database --> GiaHanAPI : 15. insertIntoDB()
+deactivate Database
+
+GiaHanAPI --> GiaHanController : 16. confirmDBSave()
+deactivate GiaHanAPI
+
+GiaHanController --> GiaHanForm : 17. returnSaveSuccess()
+deactivate GiaHanController
+
+GiaHanForm --> SinhVien : 18. returnProcessSuccess()
+SinhVien --> SinhVien : 19. showSuccessMessage()
+
+@enduml
+
+' ==========================================
+' 16. Hình 3.16 - Sơ đồ tuần tự chức năng Xét duyệt đơn xin gia hạn
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NguoiPhuTrachDoAn
+boundary XetDuyetGiaHanForm
+control XetDuyetGiaHanController
+entity DonGiaHan
+control XetDuyetGiaHanAPI
+database Database
+
+NguoiPhuTrachDoAn -> XetDuyetGiaHanForm : 1. accessExtensionManagement()
+XetDuyetGiaHanForm -> XetDuyetGiaHanController : 2. requestPendingExtensions()
+activate XetDuyetGiaHanController
+
+XetDuyetGiaHanController -> XetDuyetGiaHanAPI : 3. callGetPendingExtensionsAPI()
+activate XetDuyetGiaHanAPI
+
+XetDuyetGiaHanAPI -> Database : 4. queryPendingExtensions()
+activate Database
+Database --> XetDuyetGiaHanAPI : 5. returnPendingExtensionsData()
+deactivate Database
+
+XetDuyetGiaHanAPI --> XetDuyetGiaHanController : 6. returnExtensionList()
+deactivate XetDuyetGiaHanAPI
+
+XetDuyetGiaHanController --> XetDuyetGiaHanForm : 7. showPendingExtensionList()
+deactivate XetDuyetGiaHanController
+
+NguoiPhuTrachDoAn -> XetDuyetGiaHanForm : 8. viewExtensionDetails()
+
+alt [Luồng thay thế 6a: Tạm hoãn xét duyệt]
+    NguoiPhuTrachDoAn -> XetDuyetGiaHanForm : 9. selectPostpone()
+    activate XetDuyetGiaHanForm
+    XetDuyetGiaHanForm --> XetDuyetGiaHanForm : 10. keepPendingStatus()
+    deactivate XetDuyetGiaHanForm
+else [Luồng xử lý chính & Cáo ngoại lệ]
+    NguoiPhuTrachDoAn -> XetDuyetGiaHanForm : 11. selectApproveOrReject()
+    XetDuyetGiaHanForm -> XetDuyetGiaHanController : 12. sendApprovalRequest()
+    activate XetDuyetGiaHanController
+    
+    XetDuyetGiaHanController -> XetDuyetGiaHanController : 13. validateInputData()
+    
+    alt [Ngoại lệ 1 & 2: Thiếu số ngày gia hạn hoặc thiếu lý do từ chối]
+        XetDuyetGiaHanController --> XetDuyetGiaHanForm : 14. returnMissingInputError()
+        XetDuyetGiaHanForm --> NguoiPhuTrachDoAn : 15. showMissingInfoMessage()
+    else [Thông tin hợp lệ]
+        XetDuyetGiaHanController -> DonGiaHan : 16. updateExtensionStatus()
+        activate DonGiaHan
+        DonGiaHan --> XetDuyetGiaHanController : 17. returnUpdatedExtension()
+        deactivate DonGiaHan
+        
+        XetDuyetGiaHanController -> XetDuyetGiaHanAPI : 18. callSaveApprovalResultAPI()
+        activate XetDuyetGiaHanAPI
+        
+        XetDuyetGiaHanAPI -> Database : 19. updateStatusAndDeadlineInDB()
+        activate Database
+        
+        alt [Ngoại lệ 3: Lỗi cập nhật CSDL]
+            Database --> XetDuyetGiaHanAPI : 20. returnDBUpdateError()
+            XetDuyetGiaHanAPI --> XetDuyetGiaHanController : 21. returnSystemErrorCode()
+            XetDuyetGiaHanController --> XetDuyetGiaHanForm : 22. returnUpdateDeadlineError()
+            XetDuyetGiaHanForm --> NguoiPhuTrachDoAn : 23. showUpdateErrorMessage()
+        else [Cập nhật CSDL thành công]
+            Database --> XetDuyetGiaHanAPI : 24. confirmDBUpdateSuccess()
+            deactivate Database
+            
+            XetDuyetGiaHanAPI --> XetDuyetGiaHanController : 25. returnSaveSuccess()
+            XetDuyetGiaHanAPI -> XetDuyetGiaHanAPI : 26. callNotifyStudentAPI()
+            XetDuyetGiaHanAPI --> XetDuyetGiaHanController : 27. confirmNotificationSent()
+            deactivate XetDuyetGiaHanAPI
+            
+            XetDuyetGiaHanController --> XetDuyetGiaHanForm : 28. returnApprovalSuccess()
+            deactivate XetDuyetGiaHanController
+            
+            XetDuyetGiaHanForm --> NguoiPhuTrachDoAn : 29. showApprovalSuccessMessage()
+        end
+    end
+end
+@enduml
+
+' ==========================================
+' 17. Hình 3.17 - Phân công và quản lý phản biện
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NguoiPhuTrachDoAn
+boundary PhanCongPhanBienForm
+control PhanCongPhanBienController
+entity PhanCong
+control PhanCongPhanBienAPI
+database Database
+actor GiangVienPhanBien
+
+NguoiPhuTrachDoAn -> PhanCongPhanBienForm : 1. accessReviewerManagement()
+activate PhanCongPhanBienForm
+PhanCongPhanBienForm -> PhanCongPhanBienController : 2. requestTopicsForAssignment()
+activate PhanCongPhanBienController
+
+PhanCongPhanBienController -> PhanCongPhanBienAPI : 3. callGetApprovedTopicsAPI()
+activate PhanCongPhanBienAPI
+
+PhanCongPhanBienAPI -> Database : 4. queryApprovedTopicsWithAdvisor()
+activate Database
+Database --> PhanCongPhanBienAPI : 5. returnTopicData()
+deactivate Database
+
+PhanCongPhanBienAPI --> PhanCongPhanBienController : 6. returnTopicList()
+deactivate PhanCongPhanBienAPI
+
+PhanCongPhanBienController --> PhanCongPhanBienForm : 7. showTopicsForAssignment()
+deactivate PhanCongPhanBienController
+
+NguoiPhuTrachDoAn -> PhanCongPhanBienForm : 8. selectTopicForAssignment()
+PhanCongPhanBienForm -> PhanCongPhanBienController : 9. requestEligibleReviewers()
+activate PhanCongPhanBienController
+
+PhanCongPhanBienController -> PhanCongPhanBienAPI : 10. callGetEligibleReviewersAPI()
+activate PhanCongPhanBienAPI
+
+PhanCongPhanBienAPI -> Database : 11. queryEligibleReviewers()
+activate Database
+Database --> PhanCongPhanBienAPI : 12. returnEligibleReviewersData()
+deactivate Database
+
+PhanCongPhanBienAPI --> PhanCongPhanBienController : 13. returnEligibleReviewersList()
+deactivate PhanCongPhanBienAPI
+
+PhanCongPhanBienController --> PhanCongPhanBienForm : 14. showEligibleReviewers()
+deactivate PhanCongPhanBienController
+
+NguoiPhuTrachDoAn -> PhanCongPhanBienForm : 15. selectReviewer()
+PhanCongPhanBienForm -> PhanCongPhanBienController : 16. sendAssignmentRequest()
+activate PhanCongPhanBienController
+
+PhanCongPhanBienController -> PhanCongPhanBienController : 17. validateAssignmentConditions()
+
+alt [Ngoại lệ: Vi phạm quy tắc nghiệp vụ (Trùng GVHD / Vượt số lượng / Đã được phân công)]
+    PhanCongPhanBienController --> PhanCongPhanBienForm : 18. returnAssignmentRuleViolationError()
+    PhanCongPhanBienForm --> NguoiPhuTrachDoAn : 19. showInvalidAssignmentWarning()
+else [Điều kiện phân công hợp lệ]
+    PhanCongPhanBienController -> PhanCong : 20. updateReviewerAssignment()
+    activate PhanCong
+    PhanCong --> PhanCongPhanBienController : 21. returnUpdatedAssignmentInfo()
+    deactivate PhanCong
+    
+    PhanCongPhanBienController -> PhanCongPhanBienAPI : 22. callSaveAssignmentAPI()
+    activate PhanCongPhanBienAPI
+    
+    PhanCongPhanBienAPI -> Database : 23. saveAssignmentToDB()
+    activate Database
+    
+    alt [Ngoại lệ: Lỗi cập nhật CSDL]
+        Database --> PhanCongPhanBienAPI : 24. returnDBSaveError()
+        PhanCongPhanBienAPI --> PhanCongPhanBienController : 25. returnSystemErrorCode()
+        PhanCongPhanBienController --> PhanCongPhanBienForm : 26. returnSaveAssignmentError()
+        PhanCongPhanBienForm --> NguoiPhuTrachDoAn : 27. showUpdateErrorMessage()
+    else [Lưu CSDL thành công]
+        Database --> PhanCongPhanBienAPI : 28. confirmAssignmentSaved()
+        deactivate Database
+        
+        PhanCongPhanBienAPI --> PhanCongPhanBienController : 29. returnSaveSuccess()
+        PhanCongPhanBienAPI -> PhanCongPhanBienAPI : 30. callNotifyReviewerAPI()
+        PhanCongPhanBienAPI --> PhanCongPhanBienController : 31. confirmNotificationSent()
+        deactivate PhanCongPhanBienAPI
+        
+        PhanCongPhanBienController --> PhanCongPhanBienForm : 32. returnAssignmentSuccess()
+        deactivate PhanCongPhanBienController
+        
+        PhanCongPhanBienForm --> NguoiPhuTrachDoAn : 33. showAssignmentSuccessMessage()
+        deactivate PhanCongPhanBienForm
+        
+        GiangVienPhanBien -> PhanCongPhanBienForm : 34. viewAssignedTopics()
+        activate GiangVienPhanBien
+        activate PhanCongPhanBienForm
+        
+        PhanCongPhanBienForm -> PhanCongPhanBienAPI : 36. callGetTopicsByReviewerAPI()
+        activate PhanCongPhanBienAPI
+        
+        PhanCongPhanBienAPI -> Database : 37. queryAssignedTopics()
+        activate Database
+        Database --> PhanCongPhanBienAPI : 38. returnAssignedTopicsData()
+        deactivate Database
+        
+        PhanCongPhanBienAPI --> PhanCongPhanBienForm : 39. returnTopicList()
+        deactivate PhanCongPhanBienAPI
+        
+        PhanCongPhanBienForm --> GiangVienPhanBien : 40. showAssignedTopicsInfo()
+        GiangVienPhanBien --> GiangVienPhanBien : 41. showAssignedTopicsDetails()
+        deactivate PhanCongPhanBienForm
+        deactivate GiangVienPhanBien
+    end
+end
+@enduml
+
+' ==========================================
+' 18. Hình 3.18 - Thành lập hội đồng bảo vệ
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NPTDA
+boundary LapHoiDongForm
+control LapHoiDongController
+entity HoiDongBaoVe
+control LapHoiDongAPI
+database Database
+
+NPTDA -> LapHoiDongForm : 1. selectCreateCouncil()
+activate LapHoiDongForm
+
+LapHoiDongForm -> LapHoiDongController : 2. requestDataList()
+activate LapHoiDongController
+
+LapHoiDongController -> LapHoiDongAPI : 3. fetchCouncilDataList()
+activate LapHoiDongAPI
+
+LapHoiDongAPI -> Database : 5. queryData()
+activate Database
+Database --> LapHoiDongAPI : 6. returnDataList()
+deactivate Database
+
+LapHoiDongAPI --> LapHoiDongController : 7. returnList()
+deactivate LapHoiDongAPI
+
+LapHoiDongController --> LapHoiDongForm : 8. showList()
+deactivate LapHoiDongController
+
+NPTDA -> LapHoiDongForm : 9. selectStudentsAndMembers()
+NPTDA -> LapHoiDongForm : 10. confirmCreateCouncil()
+
+LapHoiDongForm -> LapHoiDongController : 11. sendCouncilInfo()
+activate LapHoiDongController
+
+LapHoiDongController -> LapHoiDongController : 12. validateCouncilConditions()
+
+alt [Chủ tịch không đúng chuyên môn]
+    LapHoiDongController --> LapHoiDongForm : 13. returnInvalid()
+    LapHoiDongForm --> NPTDA : 14. showErrorMessage()
+else [Thành viên hội đồng gồm GVHD]
+    LapHoiDongController --> LapHoiDongForm : 15. returnInvalid()
+    LapHoiDongForm --> NPTDA : 16. showErrorMessage()
+else [Hợp lệ]
+    LapHoiDongController --> LapHoiDongForm : 17. returnValid()
+    
+    LapHoiDongController -> LapHoiDongAPI : 18. saveCouncil()
+    activate LapHoiDongAPI
+    
+    LapHoiDongAPI -> Database : 19. insertCouncilToDB()
+    activate Database
+    Database --> LapHoiDongAPI : 20. returnSuccess()
+    deactivate Database
+    
+    LapHoiDongAPI --> LapHoiDongForm : 21. returnSuccess()
+    deactivate LapHoiDongAPI
+    deactivate LapHoiDongController
+    
+    LapHoiDongForm --> NPTDA : 22. showSuccessMessage()
+    deactivate LapHoiDongForm
+end
+@enduml
+
+' ==========================================
+' 19. Hình 3.19 - Lập lịch bảo vệ
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NPTDA
+boundary LapLichBaoVeForm
+control LapLichBaoVeController
+entity LichBaoVe
+control LapLichBaoVeAPI
+database Database
+
+NPTDA -> LapLichBaoVeForm : 1. selectScheduleDefense()
+activate LapLichBaoVeForm
+
+LapLichBaoVeForm -> LapLichBaoVeController : 2. requestDataList()
+activate LapLichBaoVeController
+
+LapLichBaoVeController -> LapLichBaoVeAPI : 3. fetchScheduleDataList()
+activate LapLichBaoVeAPI
+
+LapLichBaoVeAPI -> Database : 5. queryData()
+activate Database
+Database --> LapLichBaoVeAPI : 6. returnDataList()
+deactivate Database
+
+LapLichBaoVeAPI --> LapLichBaoVeController : 7. returnList()
+deactivate LapLichBaoVeAPI
+
+LapLichBaoVeController --> LapLichBaoVeForm : 8. showList()
+deactivate LapLichBaoVeController
+
+NPTDA -> LapLichBaoVeForm : 9. selectScheduleDetails()
+
+LapLichBaoVeForm -> LapLichBaoVeController : 10. sendScheduleInfo()
+activate LapLichBaoVeController
+
+LapLichBaoVeController -> LapLichBaoVeController : 11. validateScheduleConditions()
+
+alt [Phòng đã có lịch]
+    LapLichBaoVeController --> LapLichBaoVeForm : 12. returnInvalid()
+    LapLichBaoVeForm --> NPTDA : 13. returnError()
+    LapLichBaoVeForm --> NPTDA : 14. showRoomInUseError()
+else [Hội đồng đã có lịch]
+    LapLichBaoVeController --> LapLichBaoVeForm : 15. returnInvalid()
+    LapLichBaoVeForm --> NPTDA : 16. returnError()
+    LapLichBaoVeForm --> NPTDA : 17. showCouncilBusyError()
+else [Sinh viên đã có lịch]
+    LapLichBaoVeController --> LapLichBaoVeForm : 18. returnInvalid()
+    LapLichBaoVeForm --> NPTDA : 19. returnError()
+    LapLichBaoVeForm --> NPTDA : 20. showConflictError()
+else [Hợp lệ]
+    LapLichBaoVeController --> LapLichBaoVeForm : 21. returnValid()
+    LapLichBaoVeController -> LapLichBaoVeAPI : 22. saveSchedule()
+    activate LapLichBaoVeAPI
+    
+    LapLichBaoVeAPI -> Database : 23. insertScheduleToDB()
+    activate Database
+    Database --> LapLichBaoVeAPI : 24. returnSuccess()
+    deactivate Database
+    
+    LapLichBaoVeAPI --> LapLichBaoVeForm : 25. returnSuccess()
+    deactivate LapLichBaoVeAPI
+    deactivate LapLichBaoVeController
+    
+    LapLichBaoVeForm --> NPTDA : 26. showSuccessMessage()
+    deactivate LapLichBaoVeForm
+end
+@enduml
+
+' ==========================================
+' 20. Hình 3.20 - Chấm điểm và công bố kết quả
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor HDBV
+boundary ChamDiemForm
+control ChamDiemController
+entity KetQuaBaoVe
+control ChamDiemAPI
+database Database
+
+HDBV -> ChamDiemForm : 1. selectGradingFunction()
+activate ChamDiemForm
+
+ChamDiemForm -> ChamDiemController : 2. requestDefenseList()
+activate ChamDiemController
+
+ChamDiemController -> ChamDiemAPI : 3. fetchStudentList()
+activate ChamDiemAPI
+
+ChamDiemAPI -> Database : 4. queryData()
+activate Database
+Database --> ChamDiemAPI : 5. returnData()
+deactivate Database
+
+ChamDiemAPI --> ChamDiemForm : 6. returnStudentList()
+deactivate ChamDiemAPI
+deactivate ChamDiemController
+
+ChamDiemForm --> HDBV : 7. showList()
+
+HDBV -> ChamDiemForm : 8. inputGradeAndFeedback()
+ChamDiemForm -> ChamDiemController : 9. sendGradingInfo()
+activate ChamDiemController
+
+ChamDiemController -> KetQuaBaoVe : 10. validateData()
+activate KetQuaBaoVe
+deactivate KetQuaBaoVe
+
+alt [Điểm không hợp lệ]
+    ChamDiemController --> ChamDiemForm : 11. returnInvalid()
+    ChamDiemForm --> HDBV : 12. returnError()
+    ChamDiemForm --> HDBV : 13. showInvalidGradeError()
+else [Hợp lệ]
+    ChamDiemController --> ChamDiemForm : 14. returnValid()
+    ChamDiemController -> ChamDiemAPI : 15. saveResult()
+    activate ChamDiemAPI
+    
+    ChamDiemAPI -> Database : 16. insertGradeToDB()
+    activate Database
+    Database --> ChamDiemAPI : 17. returnSuccess()
+    deactivate Database
+    
+    ChamDiemAPI --> ChamDiemController : 18. returnSuccess()
+    deactivate ChamDiemAPI
+    
+    ChamDiemController --> ChamDiemForm : 19. publishResult()
+    deactivate ChamDiemController
+    
+    ChamDiemForm --> HDBV : 20. showSuccessMessage()
+    deactivate ChamDiemForm
+end
+@enduml
+
+' ==========================================
+' 21. Hình 3.21 - Quản lý hồ sơ đồ án
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor SinhVien
+actor NguoiPhuTrach
+boundary QuanLyHoSoDoAnForm
+control QuanLyHoSoDoAnController
+control QuanLyHoSoAPI
+database Database
+
+alt [Sinh viên nộp hồ sơ]
+    SinhVien -> QuanLyHoSoDoAnForm : 1. selectSubmitProjectRecord()
+    activate QuanLyHoSoDoAnForm
+    QuanLyHoSoDoAnForm --> SinhVien : 2. showSubmissionForm()
+    
+    SinhVien -> QuanLyHoSoDoAnForm : 3. uploadFiles()
+    SinhVien -> QuanLyHoSoDoAnForm : 4. clickSubmit()
+    
+    QuanLyHoSoDoAnForm -> QuanLyHoSoDoAnController : 5. sendSubmissionRequest()
+    activate QuanLyHoSoDoAnController
+    
+    QuanLyHoSoDoAnController -> QuanLyHoSoDoAnController : 6. validateFiles()
+    QuanLyHoSoDoAnController -> QuanLyHoSoDoAnController : 7. initProjectRecord()
+    
+    QuanLyHoSoDoAnController -> QuanLyHoSoAPI : 8. sendRecord()
+    activate QuanLyHoSoAPI
+    
+    QuanLyHoSoAPI -> Database : 9. saveRecordToDB()
+    activate Database
+    Database --> QuanLyHoSoAPI : 10. returnSuccess()
+    deactivate Database
+    
+    QuanLyHoSoAPI --> QuanLyHoSoDoAnForm : 11. returnResult()
+    deactivate QuanLyHoSoAPI
+    deactivate QuanLyHoSoDoAnController
+    
+    QuanLyHoSoDoAnForm --> SinhVien : 12. showSuccessMessage()
+    deactivate QuanLyHoSoDoAnForm
+
+else [Người phụ trách đóng gói hồ sơ]
+    NguoiPhuTrach -> QuanLyHoSoDoAnForm : 13. selectManageProjectRecords()
+    activate QuanLyHoSoDoAnForm
+    
+    QuanLyHoSoDoAnForm -> QuanLyHoSoDoAnController : 14. requestRecordList()
+    activate QuanLyHoSoDoAnController
+    
+    QuanLyHoSoDoAnController -> QuanLyHoSoAPI : 15. fetchRecordList()
+    activate QuanLyHoSoAPI
+    
+    QuanLyHoSoAPI -> Database : 16. readRecordData()
+    activate Database
+    Database --> QuanLyHoSoAPI : 17. returnData()
+    deactivate Database
+    
+    QuanLyHoSoAPI --> QuanLyHoSoDoAnController : 18. returnRecordList()
+    deactivate QuanLyHoSoAPI
+    
+    QuanLyHoSoDoAnController --> QuanLyHoSoDoAnForm : 19. showRecordList()
+    deactivate QuanLyHoSoDoAnController
+    
+    NguoiPhuTrach -> QuanLyHoSoDoAnForm : 20. selectPackageBatch()
+    QuanLyHoSoDoAnForm -> QuanLyHoSoDoAnController : 21. sendPackageRequest()
+    activate QuanLyHoSoDoAnController
+    
+    QuanLyHoSoDoAnController -> QuanLyHoSoDoAnController : 22. aggregateRecords()
+    QuanLyHoSoDoAnController -> QuanLyHoSoDoAnController : 23. createDataArchive()
+    
+    QuanLyHoSoDoAnController -> QuanLyHoSoAPI : 24. sendDataArchive()
+    activate QuanLyHoSoAPI
+    
+    QuanLyHoSoAPI -> Database : 25. saveDataArchiveToDB()
+    activate Database
+    Database --> QuanLyHoSoAPI : 26. returnSuccess()
+    deactivate Database
+    
+    QuanLyHoSoAPI --> QuanLyHoSoDoAnForm : 27. returnResult()
+    deactivate QuanLyHoSoAPI
+    deactivate QuanLyHoSoDoAnController
+    
+    QuanLyHoSoDoAnForm --> NguoiPhuTrach : 28. showSuccessMessage()
+    deactivate QuanLyHoSoDoAnForm
+end
+@enduml
+
+' ==========================================
+' 22. Hình 3.22 - Tra cứu hồ sơ đồ án
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor TatCaNguoiDung
+boundary TraCuuHoSoDoAnForm
+control TraCuuHoSoDoAnController
+entity HoSoDoAn
+control TraCuuHoSoAPI
+database Database
+
+TatCaNguoiDung -> TraCuuHoSoDoAnForm : 1. selectSearchRecords()
+activate TraCuuHoSoDoAnForm
+TraCuuHoSoDoAnForm --> TatCaNguoiDung : 2. showSearchUI()
+
+TatCaNguoiDung -> TraCuuHoSoDoAnForm : 3. inputSearchCriteria()
+TatCaNguoiDung -> TraCuuHoSoDoAnForm : 4. clickSearch()
+
+TraCuuHoSoDoAnForm -> TraCuuHoSoDoAnController : 5. sendSearchRequest()
+activate TraCuuHoSoDoAnController
+
+TraCuuHoSoDoAnController -> TraCuuHoSoDoAnController : 6. validateSearchConditions()
+
+TraCuuHoSoDoAnController -> HoSoDoAn : 7. searchRecords()
+activate HoSoDoAn
+deactivate HoSoDoAn
+
+TraCuuHoSoDoAnController -> TraCuuHoSoAPI : 8. requestDataQuery()
+activate TraCuuHoSoAPI
+
+TraCuuHoSoAPI -> Database : 9. queryRecordsInDB()
+activate Database
+Database --> TraCuuHoSoAPI : 10. returnData()
+deactivate Database
+
+TraCuuHoSoAPI --> TraCuuHoSoDoAnController : 11. returnResult()
+deactivate TraCuuHoSoAPI
+
+TraCuuHoSoDoAnController --> TraCuuHoSoDoAnForm : 12. returnRecordList()
+deactivate TraCuuHoSoDoAnController
+
+TraCuuHoSoDoAnForm --> TatCaNguoiDung : 13. showRecordList()
+deactivate TraCuuHoSoDoAnForm
+
+TatCaNguoiDung -> TraCuuHoSoDoAnForm : 14. selectRecord()
+activate TraCuuHoSoDoAnForm
+
+TraCuuHoSoDoAnForm -> TraCuuHoSoDoAnController : 15. requestViewDetails()
+activate TraCuuHoSoDoAnController
+
+TraCuuHoSoDoAnController -> HoSoDoAn : 16. fetchRecordInfo()
+activate HoSoDoAn
+deactivate HoSoDoAn
+
+TraCuuHoSoDoAnController -> TraCuuHoSoAPI : 17. readRecordInfo()
+activate TraCuuHoSoAPI
+
+TraCuuHoSoAPI -> Database : 18. queryRecordDetails()
+activate Database
+Database --> TraCuuHoSoAPI : 19. returnData()
+deactivate Database
+
+TraCuuHoSoAPI --> TraCuuHoSoDoAnController : 20. returnResult()
+deactivate TraCuuHoSoAPI
+
+TraCuuHoSoDoAnController --> TraCuuHoSoDoAnForm : 21. returnRecordInfo()
+deactivate TraCuuHoSoDoAnController
+
+TraCuuHoSoDoAnForm --> TatCaNguoiDung : 22. showRecordInfo()
+
+TatCaNguoiDung --> TatCaNguoiDung : 23. downloadReport()
+deactivate TraCuuHoSoDoAnForm
+@enduml
+
+' ==========================================
+' 23. Hình 3.23 - Thống kê
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NguoiPhuTrachDoAn
+boundary ThongKeForm
+control ThongKeController
+entity DeTai
+entity DiemSo
+control ThongKeAPI
+database Database
+
+NguoiPhuTrachDoAn -> ThongKeForm : 1. accessStatistics()
+activate ThongKeForm
+
+ThongKeForm -> ThongKeController : 2. requestOverviewStats()
+activate ThongKeController
+
+ThongKeController -> ThongKeAPI : 3. callGetOverviewStatsAPI()
+activate ThongKeAPI
+
+ThongKeAPI -> Database : 4. queryAggregateData()
+activate Database
+Database --> ThongKeAPI : 5. returnAggregateData()
+deactivate Database
+
+ThongKeAPI --> ThongKeController : 6. returnOverviewStats()
+deactivate ThongKeAPI
+
+ThongKeController --> ThongKeForm : 7. showOverviewUI()
+deactivate ThongKeController
+
+NguoiPhuTrachDoAn -> ThongKeForm : 8. selectStatsCriteria()
+ThongKeForm -> ThongKeController : 9. sendFilterStatsRequest()
+activate ThongKeController
+
+ThongKeController -> ThongKeAPI : 10. callGetDetailedStatsAPI()
+activate ThongKeAPI
+
+ThongKeAPI -> Database : 11. queryDetailedData()
+activate Database
+
+alt [Ngoại lệ: Đợt đồ án chưa có dữ liệu phát sinh]
+    Database --> ThongKeAPI : 12. returnEmptyResult()
+    ThongKeAPI --> ThongKeController : 13. returnNoDataFound()
+    ThongKeController --> ThongKeForm : 14. returnNoStatsData()
+    ThongKeForm --> NguoiPhuTrachDoAn : 15. showNoDataMessage()
+else [Có dữ liệu thống kê phát sinh]
+    Database --> ThongKeAPI : 16. returnDetailedStatsData()
+    deactivate Database
+    ThongKeAPI --> ThongKeController : 17. returnDetailedStats()
+    deactivate ThongKeAPI
+    
+    ThongKeController -> DeTai : 18. aggregateTopicsAndProgress()
+    activate DeTai
+    DeTai --> ThongKeController : 19. returnAggregateResult()
+    deactivate DeTai
+    
+    ThongKeController -> DiemSo : 20. calculateGradesAndPassRate()
+    activate DiemSo
+    DiemSo --> ThongKeController : 21. returnCalculationResult()
+    deactivate DiemSo
+    
+    ThongKeController --> ThongKeForm : 22. returnFinalStatsData()
+    deactivate ThongKeController
+    
+    ThongKeForm -> ThongKeForm : 23. renderCharts()
+    ThongKeForm --> NguoiPhuTrachDoAn : 24. showChartsAndDetails()
+    deactivate ThongKeForm
+end
+@enduml
+
+' ==========================================
+' 24. Hình 3.24 - Xuất báo cáo
+' ==========================================
+@startuml
+hide footbox
+skinparam style strictuml
+
+actor NguoiPhuTrachDoAn
+boundary XuatBaoCaoForm
+control XuatBaoCaoController
+entity BaoCao
+control XuatBaoCaoAPI
+database Database
+
+NguoiPhuTrachDoAn -> XuatBaoCaoForm : 1. accessExportReport()
+activate XuatBaoCaoForm
+XuatBaoCaoForm --> NguoiPhuTrachDoAn : 2. showReportTypesAndFormats()
+
+NguoiPhuTrachDoAn -> XuatBaoCaoForm : 3. selectReportTypeAndFormat()
+NguoiPhuTrachDoAn -> XuatBaoCaoForm : 4. clickExportReport()
+
+XuatBaoCaoForm -> XuatBaoCaoController : 5. sendExportRequest()
+deactivate XuatBaoCaoForm
+activate XuatBaoCaoController
+
+XuatBaoCaoController -> XuatBaoCaoAPI : 6. callExportReportAPI()
+activate XuatBaoCaoAPI
+
+XuatBaoCaoAPI -> Database : 7. queryExportData()
+activate Database
+Database --> XuatBaoCaoAPI : 8. returnExportData()
+deactivate Database
+
+XuatBaoCaoAPI -> XuatBaoCaoAPI : 9. checkDataSize()
+
+alt [Ngoại lệ: Dữ liệu quá lớn (> 10.000 dòng)]
+    XuatBaoCaoAPI -> XuatBaoCaoAPI : 10. switchToBackgroundTask()
+    XuatBaoCaoAPI --> XuatBaoCaoController : 11. returnBackgroundProcessingResponse()
+    XuatBaoCaoController --> XuatBaoCaoForm : 12. notifyBackgroundProcessing()
+    XuatBaoCaoForm --> NguoiPhuTrachDoAn : 13. showBackgroundProcessingMessage()
+    XuatBaoCaoAPI -> XuatBaoCaoAPI : 14. renderFileInBackground()
+    XuatBaoCaoAPI -> XuatBaoCaoAPI : 15. sendDownloadLinkViaEmail()
+else [Dữ liệu hợp lệ ( <= 10.000 dòng )]
+    XuatBaoCaoAPI -> XuatBaoCaoAPI : 16. convertDataToStandardFormat()
+    XuatBaoCaoAPI -> XuatBaoCaoAPI : 17. returnCompletedReportFile()
+    XuatBaoCaoAPI --> XuatBaoCaoController : 18. returnFileStream()
+    deactivate XuatBaoCaoAPI
+    XuatBaoCaoController --> XuatBaoCaoForm : 19. returnReportFileToUI()
+    deactivate XuatBaoCaoController
+    
+    activate XuatBaoCaoForm
+    XuatBaoCaoForm -> XuatBaoCaoForm : 20. autoDownloadFile()
+    XuatBaoCaoForm --> NguoiPhuTrachDoAn : 21. showExportSuccessMessage()
+    deactivate XuatBaoCaoForm
+end
+
+@enduml
