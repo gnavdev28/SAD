@@ -82,6 +82,15 @@ const defaultUsers: AccountUser[] = [
     roleName: "Sinh viên",
     status: "active",
     permissions: ["dang_ky_de_tai", "nop_bao_cao", "gia_han"],
+  },
+  {
+    id: "u8",
+    name: "Hoàng Văn Khoa (SV2021001)",
+    email: "student2@st.phenikaa-uni.edu.vn",
+    role: "student",
+    roleName: "Sinh viên",
+    status: "active",
+    permissions: ["dang_ky_de_tai", "nop_bao_cao", "gia_han"],
   }
 ]
 
@@ -98,14 +107,13 @@ export interface DatabaseSchema {
   studentProgress: typeof studentProgress
   progressChart: typeof progressChart
   reviewAssignments: typeof reviewAssignments
+  councilGrades: Record<string, number>
+  reviewerDecisionIssued?: boolean
 }
 
 const initialData: DatabaseSchema = {
   semesters,
-  topics: topics.map((t, index) => ({
-    ...t,
-    approval: index === 2 || index === 4 ? "pending" : "approved",
-  } as any)),
+  topics,
   reportFiles,
   unassignedProjects,
   councils,
@@ -115,7 +123,10 @@ const initialData: DatabaseSchema = {
   extensionRequests,
   studentProgress,
   progressChart,
-  reviewAssignments
+  reviewAssignments,
+  // Điểm hội đồng sẵn cho Hoàng Văn Khoa (c2 - index 0) = 9.2
+  councilGrades: { "c2-0": 9.2 },
+  reviewerDecisionIssued: false
 }
 
 export function readDB(): DatabaseSchema {
