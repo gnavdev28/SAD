@@ -80,9 +80,45 @@ function updateStatusAndDeadlineInDB(db: any, id: string, status: 'approved' | '
   writeDB(db)
 }
 
+function autoApproveLowerProgressFiles(db: any) {
+  if (!db.reportFiles) return false
+  const maxApprovedByStudent: Record<string, number> = {}
+
+  for (const f of db.reportFiles) {
+    if (f.status === 'approved' && f.student) {
+      const sName = f.student.trim()
+      const prog = f.progress !== undefined ? f.progress : 100
+      if (maxApprovedByStudent[sName] === undefined || prog > maxApprovedByStudent[sName]) {
+        maxApprovedByStudent[sName] = prog
+      }
+    }
+  }
+
+  let updated = false
+  db.reportFiles = db.reportFiles.map((f: any) => {
+    if (f.status === 'pending' && f.student) {
+      const fStudent = f.student.trim()
+      for (const [sName, maxProg] of Object.entries(maxApprovedByStudent)) {
+        const isMatch = fStudent === sName || fStudent.includes(sName) || sName.includes(fStudent)
+        if (isMatch && (f.progress === undefined || f.progress <= maxProg)) {
+          updated = true
+          return { ...f, status: 'approved' }
+        }
+      }
+    }
+    return f
+  })
+
+  if (updated) {
+    writeDB(db)
+  }
+  return updated
+}
+
 export async function GET() {
   try {
     const db = queryDatabase()
+    autoApproveLowerProgressFiles(db)
     const mergedProgress = (db.studentProgress || []).map((p: any) => {
       const ra = (db.reviewAssignments || []).find((r: any) => {
         const rName = r.student.trim()
@@ -177,6 +213,7 @@ export async function POST(request: Request) {
         })
       }
 
+      autoApproveLowerProgressFiles(db)
       writeDB(db)
       return NextResponse.json({
         success: true,
@@ -243,8 +280,9 @@ export async function POST(request: Request) {
       db.reportFiles = db.reportFiles.map((r: any) => 
         r.id === id ? { ...r, status } : r
       )
-      // Nếu duyệt, cập nhật lastReport và max progress trong studentProgress
+      // Nếu duyệt, cập nhật lastReport, max progress và tự động duyệt các báo cáo % thấp hơn của SV
       if (status === 'approved') {
+        autoApproveLowerProgressFiles(db)
         const approvedFile = db.reportFiles.find((r: any) => r.id === id)
         if (approvedFile && approvedFile.student) {
           const sName: string = approvedFile.student
