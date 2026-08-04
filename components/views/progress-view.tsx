@@ -19,6 +19,7 @@ import {
   Download,
   Lock,
   CalendarRange,
+  AlertTriangle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -57,8 +58,16 @@ import {
 } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
 
-function statusBadge(status: ReportFile["status"]) {
+function statusBadge(status: ReportFile["status"], isFinalThesis?: boolean) {
   if (status === "approved") {
+    if (isFinalThesis) {
+      return (
+        <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
+          <CheckCircle2 className="size-3.5" aria-hidden="true" />
+          Đã duyệt &amp; Khóa
+        </Badge>
+      )
+    }
     return (
       <Badge className="gap-1 bg-primary/10 text-primary hover:bg-primary/10">
         <CheckCircle2 className="size-3.5" aria-hidden="true" />
@@ -623,54 +632,91 @@ export function ProgressView({ user }: ProgressViewProps) {
               </div>
 
               {/* 22. final thesis upload */}
-              <div className="flex flex-col gap-2">
-                <div
-                  role="button"
-                  tabIndex={finalThesis ? -1 : 0}
-                  onClick={() => !finalThesis && finalRef.current?.click()}
-                  onKeyDown={(e) => {
-                    if (!finalThesis && (e.key === "Enter" || e.key === " ")) {
-                      e.preventDefault()
-                      finalRef.current?.click()
-                    }
-                  }}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors",
-                    finalThesis
-                      ? "border-primary bg-primary/5 cursor-default"
-                      : "cursor-pointer border-border bg-card hover:border-primary/50 hover:bg-accent/40",
-                  )}
-                  aria-label="Khu vực nộp quyển đồ án tốt nghiệp PDF"
-                >
-                  <input
-                    ref={finalRef}
-                    type="file"
-                    accept="application/pdf"
-                    className="sr-only"
-                    onChange={(e) => handleFinalThesisUpload(e.target.files)}
-                  />
-                  <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <BookCheck className="size-6" aria-hidden="true" />
+              {(() => {
+                const studentName = user?.name || "Nguyễn Văn Đạt"
+                const myFinalFile = files.find((f) => {
+                  if (!f.student) return false
+                  const fStudent = f.student.trim()
+                  const sName = studentName.trim()
+                  const match = fStudent === sName || fStudent.includes(sName) || sName.includes(fStudent)
+                  return match && (f.isFinalThesis || (f.fileName && f.fileName.includes("[Quyển ĐATN]")))
+                })
+                const isFinalThesisApproved = myFinalFile?.status === "approved"
+
+                return (
+                  <div className="flex flex-col gap-2">
+                    <div
+                      role="button"
+                      tabIndex={finalThesis ? -1 : 0}
+                      onClick={() => !finalThesis && finalRef.current?.click()}
+                      onKeyDown={(e) => {
+                        if (!finalThesis && (e.key === "Enter" || e.key === " ")) {
+                          e.preventDefault()
+                          finalRef.current?.click()
+                        }
+                      }}
+                      className={cn(
+                        "flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors",
+                        isFinalThesisApproved
+                          ? "border-emerald-500 bg-emerald-500/10 cursor-default"
+                          : finalThesis
+                          ? "border-primary bg-primary/5 cursor-default"
+                          : "cursor-pointer border-border bg-card hover:border-primary/50 hover:bg-accent/40",
+                      )}
+                      aria-label="Khu vực nộp quyển đồ án tốt nghiệp PDF"
+                    >
+                      <input
+                        ref={finalRef}
+                        type="file"
+                        accept="application/pdf"
+                        className="sr-only"
+                        onChange={(e) => handleFinalThesisUpload(e.target.files)}
+                      />
+                      <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <BookCheck className="size-6" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Nộp quyển ĐATN (bản PDF)</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {isFinalThesisApproved ? (
+                            <span className="font-semibold text-emerald-600 flex items-center justify-center gap-1">
+                              <CheckCircle2 className="size-3.5" /> Đã được GVHD duyệt chính thức (Đã khóa)
+                            </span>
+                          ) : finalThesis ? (
+                            `Đã nộp: ${finalThesis}`
+                          ) : (
+                            "Bản hoàn chỉnh cuối cùng"
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    {finalThesis && (
+                      isFinalThesisApproved ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled
+                          className="gap-1 opacity-60 bg-muted/40 cursor-not-allowed text-muted-foreground border-border self-end"
+                          title="Quyển ĐATN đã được GVHD duyệt chính thức, không thể hủy nộp"
+                        >
+                          <Lock className="size-3.5" aria-hidden="true" />
+                          Đã được GVHD duyệt (Không thể hủy nộp)
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-destructive hover:text-destructive self-end"
+                          onClick={handleCancelFinalThesis}
+                        >
+                          <X className="size-3.5" aria-hidden="true" />
+                          Huỷ nộp quyển
+                        </Button>
+                      )
+                    )}
                   </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Nộp quyển ĐATN (bản PDF)</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {finalThesis ? `Đã nộp: ${finalThesis}` : "Bản hoàn chỉnh cuối cùng"}
-                    </p>
-                  </div>
-                </div>
-                {finalThesis && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1 text-destructive hover:text-destructive self-end"
-                    onClick={handleCancelFinalThesis}
-                  >
-                    <X className="size-3.5" aria-hidden="true" />
-                    Huỷ nộp quyển
-                  </Button>
-                )}
-              </div>
+                )
+              })()}
             </div>
           )}
 
@@ -738,7 +784,7 @@ export function ProgressView({ user }: ProgressViewProps) {
                               <span className="text-xs text-muted-foreground italic">—</span>
                             )}
                           </TableCell>
-                          <TableCell>{statusBadge(f.status)}</TableCell>
+                          <TableCell>{statusBadge(f.status, f.isFinalThesis || (f.fileName && f.fileName.includes("[Quyển ĐATN]")))}</TableCell>
                           <TableCell>
                             <div className="flex items-center justify-end gap-1">
                               {f.status === "approved" ? (
@@ -1027,7 +1073,7 @@ export function ProgressView({ user }: ProgressViewProps) {
                                             <span className="text-xs text-muted-foreground w-8">{f.progress}%</span>
                                           </div>
                                         )}
-                                        {statusBadge(f.status)}
+                                        {statusBadge(f.status, f.isFinalThesis || (f.fileName && f.fileName.includes("[Quyển ĐATN]")))}
                                         {!isAdmin && f.status === "pending" && (
                                           <>
                                             <Button
@@ -1196,21 +1242,39 @@ export function ProgressView({ user }: ProgressViewProps) {
 
       {/* Grade confirm dialog */}
       <Dialog open={gradeConfirmOpen} onOpenChange={setGradeConfirmOpen}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
               {gradeTarget?.action === "approved" ? "Xác nhận duyệt báo cáo" : "Xác nhận từ chối báo cáo"}
             </DialogTitle>
-            <DialogDescription>
-              File: <span className="font-medium text-foreground">{gradeTarget?.fileName}</span>
-              <br />Sinh viên: <span className="font-medium text-foreground">{gradeTarget?.student}</span>
-              <br /><br />
-              {gradeTarget?.action === "approved"
-                ? "Sau khi duyệt, báo cáo sẽ được ghi nhận vào tiến độ sinh viên và không thể hoàn tác."
-                : "Sau khi từ chối, sinh viên sẽ cần nộp lại báo cáo mới. Hành động này không thể hoàn tác."}
-            </DialogDescription>
+            <div className="space-y-3 pt-2 text-sm text-muted-foreground">
+              <div>
+                File: <span className="font-semibold text-foreground">{gradeTarget?.fileName}</span>
+                <br />Sinh viên: <span className="font-semibold text-foreground">{gradeTarget?.student}</span>
+              </div>
+              {gradeTarget?.action === "approved" && (gradeTarget?.fileName.includes("[Quyển ĐATN]") || files.find((f) => f.id === gradeTarget?.id)?.isFinalThesis) ? (
+                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-800 font-medium leading-relaxed flex items-start gap-2.5">
+                  <AlertTriangle className="size-5 shrink-0 text-amber-600 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-amber-900">CẢNH BÁO QUAN TRỌNG:</span>
+                    <br />Bạn đang chuẩn bị duyệt <strong>Quyển ĐATN (Bản hoàn chỉnh)</strong>.
+                    <br />Sau khi bạn duyệt, quyển ĐATN này sẽ <strong>chính thức bị khóa</strong>:
+                    <ul className="mt-1.5 list-disc list-inside text-[11px] text-amber-900/90 font-normal space-y-0.5">
+                      <li>Sinh viên <strong>không thể hủy nộp</strong> nữa.</li>
+                      <li>Giảng viên <strong>không thể hủy duyệt</strong> hoặc chỉnh sửa lại.</li>
+                    </ul>
+                  </div>
+                </div>
+              ) : (
+                <p>
+                  {gradeTarget?.action === "approved"
+                    ? "Sau khi duyệt, báo cáo sẽ được ghi nhận vào tiến độ sinh viên và không thể hoàn tác."
+                    : "Sau khi từ chối, sinh viên sẽ cần nộp lại báo cáo mới. Hành động này không thể hoàn tác."}
+                </p>
+              )}
+            </div>
           </DialogHeader>
-          <DialogFooter>
+          <DialogFooter className="mt-2">
             <Button variant="outline" onClick={() => setGradeConfirmOpen(false)}>Hủy</Button>
             <Button
               className={gradeTarget?.action === "approved"

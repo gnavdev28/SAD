@@ -189,6 +189,18 @@ export async function POST(request: Request) {
     if (action === 'cancel_final_thesis') {
       const { studentName } = body
       const sName = (studentName || "Nguyễn Văn Đạt").trim()
+      
+      const existingApproved = (db.reportFiles || []).find((f: any) => {
+        if (!f.student) return false
+        const fStudent = f.student.trim()
+        const isMatch = fStudent === sName || fStudent.includes(sName) || sName.includes(fStudent)
+        return isMatch && (f.isFinalThesis || (f.fileName && f.fileName.includes("[Quyển ĐATN]"))) && f.status === 'approved'
+      })
+
+      if (existingApproved) {
+        return NextResponse.json({ success: false, message: "Quyển ĐATN đã được GVHD duyệt chính thức, không thể hủy nộp." }, { status: 400 })
+      }
+
       db.reportFiles = (db.reportFiles || []).filter((f: any) => {
         if (!f.student) return true
         const fStudent = f.student.trim()
