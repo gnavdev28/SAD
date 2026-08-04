@@ -98,6 +98,7 @@ export type ReportFile = {
   status: "approved" | "pending" | "rejected"
   student?: string
   progress?: number
+  isFinalThesis?: boolean
 }
 
 export const reportFiles: ReportFile[] = [

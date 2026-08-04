@@ -124,6 +124,108 @@ export async function POST(request: Request) {
       })
     }
 
+    if (action === 'submit_final_thesis') {
+      const { fileName, studentName, topicTitle } = body
+      const sName = (studentName || "Nguyễn Văn Đạt").trim()
+      const cleanFileName = fileName.startsWith("[Quyển ĐATN]") ? fileName : `[Quyển ĐATN] ${fileName}`
+      
+      const newReport = {
+        id: `r-final-${Date.now()}`,
+        fileName: cleanFileName,
+        submittedDate: new Date().toLocaleDateString('vi-VN'),
+        status: 'pending' as const,
+        student: studentName || "Nguyễn Văn Đạt (SV2021008)",
+        progress: 100,
+        isFinalThesis: true
+      }
+
+      // Remove any existing final thesis report for this student
+      db.reportFiles = (db.reportFiles || []).filter((f: any) => {
+        if (!f.student) return true
+        const fStudent = f.student.trim()
+        const isMatch = fStudent === sName || fStudent.includes(sName) || sName.includes(fStudent)
+        return !(isMatch && (f.isFinalThesis || (f.fileName && f.fileName.includes("[Quyển ĐATN]"))))
+      })
+
+      db.reportFiles.unshift(newReport)
+
+      let found = false
+      db.studentProgress = (db.studentProgress || []).map((p: any) => {
+        const pName = p.student.trim()
+        const isMatch = pName === sName || pName.includes(sName) || sName.includes(pName)
+        if (isMatch) {
+          found = true
+          return {
+            ...p,
+            progress: 100,
+            lastReport: cleanFileName
+          }
+        }
+        return p
+      })
+
+      if (!found) {
+        db.studentProgress.push({
+          id: `p-${Date.now()}`,
+          student: studentName,
+          topicTitle: topicTitle || "Ứng dụng di động quản lý chi tiêu cá nhân",
+          progress: 100,
+          lastReport: cleanFileName,
+          instructor: "TS. Nguyễn Văn An",
+          semesterId: "dt-2026-t8",
+          isLocked: false
+        })
+      }
+
+      writeDB(db)
+      return NextResponse.json({
+        success: true,
+        reportFiles: db.reportFiles,
+        studentProgress: db.studentProgress,
+        progressChart: db.progressChart
+      })
+    }
+
+    if (action === 'cancel_final_thesis') {
+      const { studentName } = body
+      const sName = (studentName || "Nguyễn Văn Đạt").trim()
+      db.reportFiles = (db.reportFiles || []).filter((f: any) => {
+        if (!f.student) return true
+        const fStudent = f.student.trim()
+        const isMatch = fStudent === sName || fStudent.includes(sName) || sName.includes(fStudent)
+        return !(isMatch && (f.isFinalThesis || (f.fileName && f.fileName.includes("[Quyển ĐATN]"))))
+      })
+
+      // Recalculate progress from remaining files
+      db.studentProgress = (db.studentProgress || []).map((p: any) => {
+        const pName = p.student.trim()
+        const isMatch = pName === sName || pName.includes(sName) || sName.includes(pName)
+        if (isMatch) {
+          const myFiles = db.reportFiles.filter((r: any) => {
+            if (!r.student) return false
+            const rStudent = r.student.trim()
+            return rStudent === sName || rStudent.includes(sName) || sName.includes(rStudent)
+          })
+          const maxProg = myFiles.length > 0 ? Math.max(...myFiles.map((r: any) => r.progress || 0)) : 40
+          const lastFile = myFiles.length > 0 ? myFiles[0].fileName : "BaoCao_TienDo_Tuan04.pdf"
+          return {
+            ...p,
+            progress: maxProg,
+            lastReport: lastFile
+          }
+        }
+        return p
+      })
+
+      writeDB(db)
+      return NextResponse.json({
+        success: true,
+        reportFiles: db.reportFiles,
+        studentProgress: db.studentProgress,
+        progressChart: db.progressChart
+      })
+    }
+
     if (action === 'grade_report') {
       const { id, status } = body
       db.reportFiles = db.reportFiles.map((r: any) => 

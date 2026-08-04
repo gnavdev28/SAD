@@ -215,9 +215,79 @@ export function ProgressView({ user }: ProgressViewProps) {
         setExtensions(data.extensionRequests)
         setStudentProgressList(data.studentProgress)
         setChartData(data.progressChart)
+
+        const studentName = (user?.name || "Nguyễn Văn Đạt").trim()
+        const myFinal = (data.reportFiles || []).find((f: any) => {
+          if (!f.student) return false
+          const fStudent = f.student.trim()
+          const match = fStudent === studentName || fStudent.includes(studentName) || studentName.includes(fStudent)
+          return match && (f.isFinalThesis || (f.fileName && f.fileName.includes("[Quyển ĐATN]")))
+        })
+        if (myFinal) {
+          setFinalThesis(myFinal.fileName)
+        } else {
+          setFinalThesis(null)
+        }
       }
     } catch (err) {
       console.error("Error fetching progress data:", err)
+    }
+  }
+
+  async function handleFinalThesisUpload(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return
+    const file = fileList[0]
+    const studentName = user?.name || "Nguyễn Văn Đạt"
+    try {
+      const res = await fetch("/api/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "submit_final_thesis",
+          fileName: file.name,
+          studentName,
+          topicTitle: "Ứng dụng di động quản lý chi tiêu cá nhân"
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setFiles(data.reportFiles)
+        setStudentProgressList(data.studentProgress)
+        setChartData(data.progressChart)
+        const myFinal = (data.reportFiles || []).find((f: any) => {
+          if (!f.student) return false
+          const fStudent = f.student.trim()
+          const sName = studentName.trim()
+          return (fStudent === sName || fStudent.includes(sName) || sName.includes(fStudent)) &&
+                 (f.isFinalThesis || (f.fileName && f.fileName.includes("[Quyển ĐATN]")))
+        })
+        setFinalThesis(myFinal ? myFinal.fileName : `[Quyển ĐATN] ${file.name}`)
+      }
+    } catch (err) {
+      console.error("Error submitting final thesis:", err)
+    }
+  }
+
+  async function handleCancelFinalThesis() {
+    const studentName = user?.name || "Nguyễn Văn Đạt"
+    try {
+      const res = await fetch("/api/progress", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "cancel_final_thesis",
+          studentName
+        })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setFiles(data.reportFiles)
+        setStudentProgressList(data.studentProgress)
+        setChartData(data.progressChart)
+        setFinalThesis(null)
+      }
+    } catch (err) {
+      console.error("Error cancelling final thesis:", err)
     }
   }
 
@@ -577,7 +647,7 @@ export function ProgressView({ user }: ProgressViewProps) {
                     type="file"
                     accept="application/pdf"
                     className="sr-only"
-                    onChange={(e) => e.target.files?.[0] && setFinalThesis(e.target.files[0].name)}
+                    onChange={(e) => handleFinalThesisUpload(e.target.files)}
                   />
                   <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <BookCheck className="size-6" aria-hidden="true" />
@@ -594,7 +664,7 @@ export function ProgressView({ user }: ProgressViewProps) {
                     variant="outline"
                     size="sm"
                     className="gap-1 text-destructive hover:text-destructive self-end"
-                    onClick={() => setFinalThesis(null)}
+                    onClick={handleCancelFinalThesis}
                   >
                     <X className="size-3.5" aria-hidden="true" />
                     Huỷ nộp quyển
@@ -652,6 +722,9 @@ export function ProgressView({ user }: ProgressViewProps) {
                             <span className="flex items-center gap-2 font-medium text-foreground">
                               <FileText className="size-4 shrink-0 text-primary" aria-hidden="true" />
                               {f.fileName}
+                              {(f.isFinalThesis || f.fileName.includes("[Quyển ĐATN]")) && (
+                                <Badge className="bg-purple-600 text-white text-[10px] px-1.5 py-0">Quyển ĐATN</Badge>
+                              )}
                             </span>
                           </TableCell>
                           <TableCell className="text-muted-foreground">{f.submittedDate}</TableCell>
